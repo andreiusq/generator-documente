@@ -23,7 +23,7 @@ class DocumentGenerator {
         });
     }
 
-    async generateDocument(templateType, formData) {
+    async generateDocument(templateType, formData, customOutputPath = null) {
         try {
             let templatePath, outputName, replacements;
 
@@ -92,10 +92,14 @@ class DocumentGenerator {
                     .filter(membru => membru)
                     .join('\n');
 
+                // For document generation, use individual student data for each placeholder
+                const firstStudentName = eleviArray[0] ? eleviArray[0].trim() : '';
+                
                 replacements = {
                     '[NUMAR_REFERAT]': formData.numar_referat || '',
                     '[DATA_REFERAT]': formData.data_referat ? this.formatDate(formData.data_referat) : '',
-                    '[NUMELE_ELEVILOR]': tabelElevi,
+                    '[NUMELE_ELEVILOR]': tabelElevi, // Table data for row generation
+                    '[NUMELE_ELEVULUI]': firstStudentName, // Individual student name
                     '[CNP_ELEV]': firstCnp,
                     '[CLASA_ELEV]': firstClasa,
                     '[SCOALA_ELEV]': firstScoala,
@@ -108,7 +112,7 @@ class DocumentGenerator {
                 };
             }
 
-            const outputPath = await this.processTemplate(templatePath, outputName, replacements);
+            const outputPath = await this.processTemplate(templatePath, outputName, replacements, customOutputPath);
             return { success: true, filePath: outputPath, fileName: outputName };
 
         } catch (error) {
@@ -117,7 +121,7 @@ class DocumentGenerator {
         }
     }
 
-    async processTemplate(templatePath, outputName, replacements) {
+    async processTemplate(templatePath, outputName, replacements, customOutputPath = null) {
         const templateBuffer = fs.readFileSync(templatePath);
         const zip = await JSZip.loadAsync(templateBuffer);
         
@@ -144,7 +148,15 @@ class DocumentGenerator {
         
         // Generate the modified document
         const outputBuffer = await zip.generateAsync({ type: 'nodebuffer' });
-        const outputPath = path.join(this.generatedPath, outputName);
+        
+        // Use custom path if provided, otherwise use default
+        const outputPath = customOutputPath || path.join(this.generatedPath, outputName);
+        
+        // Ensure the directory exists
+        const outputDir = path.dirname(outputPath);
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
         
         fs.writeFileSync(outputPath, outputBuffer);
         return outputPath;
@@ -154,9 +166,15 @@ class DocumentGenerator {
         const studentData = replacements['[NUMELE_ELEVILOR]'];
         const studentRows = studentData.split('\n').filter(row => row.trim());
         
-        // Find the table row that contains the student placeholder
-        const tableRowRegex = /<w:tr[^>]*>[\s\S]*?\[NUMELE_ELEVILOR\][\s\S]*?<\/w:tr>/;
-        const tableRowMatch = documentXml.match(tableRowRegex);
+        // Find the table row that contains student placeholders (try both variants)
+        let tableRowRegex = /<w:tr[^>]*>[\s\S]*?\[NUMELE_ELEVILOR\][\s\S]*?<\/w:tr>/;
+        let tableRowMatch = documentXml.match(tableRowRegex);
+        
+        // If not found, try the individual student placeholder
+        if (!tableRowMatch) {
+            tableRowRegex = /<w:tr[^>]*>[\s\S]*?\[NUMELE_ELEVULUI\][\s\S]*?<\/w:tr>/;
+            tableRowMatch = documentXml.match(tableRowRegex);
+        }
         
         if (!tableRowMatch) {
             // Fallback to regular replacement if no table structure found
@@ -172,8 +190,9 @@ class DocumentGenerator {
             
             let newRow = originalRow;
             
-            // Replace placeholders in this row
+            // Replace placeholders in this row (handle both variants)
             newRow = newRow.replace(/\[NUMELE_ELEVILOR\]/g, nume || '');
+            newRow = newRow.replace(/\[NUMELE_ELEVULUI\]/g, nume || '');
             newRow = newRow.replace(/\[CNP_ELEV\]/g, cnp || '');
             newRow = newRow.replace(/\[CLASA_ELEV\]/g, clasa || '');
             newRow = newRow.replace(/\[SCOALA_ELEV\]/g, scoala || '');
@@ -270,10 +289,14 @@ class DocumentGenerator {
                     .filter(membru => membru)
                     .join('\n');
 
+                // For preview, use individual student data, not concatenated table
+                const firstStudentName = eleviArray[0] ? eleviArray[0].trim() : '[NUMELE ELEVULUI]';
+                
                 replacements = {
                     '[NUMAR_REFERAT]': formData.numar_referat || '[NUMĂR REFERAT]',
                     '[DATA_REFERAT]': formData.data_referat ? this.formatDate(formData.data_referat) : '[DATA]',
-                    '[NUMELE_ELEVILOR]': tabelElevi || '[LISTA ELEVI]',
+                    '[NUMELE_ELEVILOR]': tabelElevi || '[LISTA ELEVI]', // Keep for table generation
+                    '[NUMELE_ELEVULUI]': firstStudentName, // Individual student name
                     '[CNP_ELEV]': firstCnp || '[CNP ELEV]',
                     '[CLASA_ELEV]': firstClasa || '[CLASA ELEV]',
                     '[SCOALA_ELEV]': firstScoala || '[ȘCOALA ELEV]',
@@ -383,16 +406,7 @@ class DocumentGenerator {
                 if (value === placeholder || !value.trim()) {
                     // Enhanced red highlighting for empty placeholders
                     const regex = new RegExp(escapedPlaceholder, 'gi');
-                    html = html.replace(regex, `<span class="empty-placeholder" style="
-                        color: #dc2626; 
-                        font-weight: bold; 
-                        background-color: #fef2f2; 
-                        padding: 3px 6px; 
-                        border-radius: 4px;
-                        border: 1px solid #fca5a5;
-                        display: inline-block;
-                        margin: 1px;
-                    ">${placeholder}</span>`);
+                    html = html.replace(regex, `<span class="empty-placeholder" style="color: #dc2626; font-weight: bold; background-color: #fef2f2; padding: 3px 6px; border-radius: 4px; border: 1px solid #fca5a5; display: inline-block; margin: 1px;">${placeholder}</span>`);
                 } else {
                     // Special handling for table data (student list)
                     if (placeholder === '[NUMELE_ELEVILOR]' && value.includes('\t')) {
@@ -429,22 +443,13 @@ class DocumentGenerator {
                         
                         html = html.replace(new RegExp(escapedPlaceholder, 'gi'), tableHtml);
                     } else {
-                        // Enhanced blue highlighting for filled content
+                        // Enhanced blue highlighting for filled content - avoid nested replacements
                         const valueLines = value.split('\n');
                         for (let i = 0; i < valueLines.length; i++) {
                             const line = valueLines[i].trim();
-                            if (line && html.includes(line)) {
-                                const regex = new RegExp(line.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                                html = html.replace(regex, `<span class="filled-content" style="
-                                    color: #0066cc; 
-                                    font-weight: 500; 
-                                    background-color: #eff6ff; 
-                                    padding: 2px 4px; 
-                                    border-radius: 3px;
-                                    border: 1px solid #93c5fd;
-                                    display: inline-block;
-                                    margin: 1px;
-                                ">${line}</span>`);
+                            if (line && html.includes(line) && !html.includes(`>${line}</span>`)) {
+                                const regex = new RegExp('(?!<[^>]*>)' + line.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![^<]*</)', 'g');
+                                html = html.replace(regex, `<span class="filled-content" style="color: #0066cc; font-weight: 500; background-color: #eff6ff; padding: 2px 4px; border-radius: 3px; border: 1px solid #93c5fd; display: inline-block; margin: 1px;">${line}</span>`);
                             }
                         }
                     }
@@ -563,12 +568,13 @@ class DocumentGenerator {
         for (const [placeholder, value] of Object.entries(replacements)) {
             const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             
-            if (value !== placeholder && value.trim()) {
-                // Replace with actual value, preserving line breaks as Word XML
-                const wordValue = value.replace(/\n/g, '</w:t><w:br/><w:t>');
-                modifiedXml = modifiedXml.replace(new RegExp(escapedPlaceholder, 'g'), wordValue);
+            // Replace with actual value if we have one, otherwise leave placeholder for HTML styling
+            if (value && value !== placeholder && value.trim()) {
+                // Replace with actual value, preserving line breaks as Word XML  
+                const replacementValue = value.replace(/\n/g, '</w:t><w:br/><w:t>');
+                modifiedXml = modifiedXml.replace(new RegExp(escapedPlaceholder, 'g'), replacementValue);
             }
-            // If empty, leave placeholder as-is for coloring in post-processing
+            // If no value, leave placeholder in XML - it will be styled in HTML post-processing
         }
         
         return modifiedXml;

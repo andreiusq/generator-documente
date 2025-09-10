@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Preview Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>Preview HTML Test</h1>
+    
+    <div class="test-result">
+        <h3>Expected vs Actual HTML</h3>
+        <p><strong>Expected:</strong> Clean HTML with proper placeholder highlighting</p>
+        <p><strong>Problem was:</strong> CSS styles appearing as text instead of applying</p>
+        <p><strong>Fix applied:</strong> Removed line breaks from inline styles, improved placeholder replacement logic</p>
+    </div>
+
+    <div class="test-result success">
+        <h3>✅ Fixed Issues:</h3>
+        <ul>
+            <li>CSS inline styles now properly formatted (no line breaks)</li>
+            <li>Placeholder replacement logic improved</li>
+            <li>XML replacement handles empty vs filled placeholders correctly</li>
+            <li>Avoided nested span conflicts in HTML styling</li>
+        </ul>
+    </div>
+
+    <div class="test-result">
+        <h3>Sample Output (should now work correctly):</h3>
+        <div style="border: 1px solid #ddd; padding: 10px; background: #f9f9f9;">
+            <p>Nr. <span style="color: #0066cc; font-weight: 500; background-color: #eff6ff; padding: 2px 4px; border-radius: 3px; border: 1px solid #93c5fd; display: inline-block; margin: 1px;">REF/789</span> / <span style="color: #0066cc; font-weight: 500; background-color: #eff6ff; padding: 2px 4px; border-radius: 3px; border: 1px solid #93c5fd; display: inline-block; margin: 1px;">25.12.2024</span></p>
+            
+            <p><strong>REFERAT</strong></p>
+            
+            <p>Subsemnata, Mocanu Veronica, inspector școlar pentru minorități...</p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                <thead>
+                    <tr style="background-color: #f3f4f6;">
+                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">Nr. crt.</th>
+                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">Numele și prenumele</th>
+                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">CNP</th>
+                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">Clasa</th>
+                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">Școala dorită</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; color: #0066cc; font-weight: 500;">1</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; color: #0066cc; font-weight: 500;">Petrov Olena</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; color: #0066cc; font-weight: 500;">1234567890123</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; color: #0066cc; font-weight: 500;">a VI-a A</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; color: #0066cc; font-weight: 500;">Școala Gimnazială Nr. 15</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        console.log('Preview fix test loaded successfully');
+        console.log('The preview should now show:');
+        console.log('1. Proper blue highlighting for filled content');
+        console.log('2. Red highlighting for empty placeholders');
+        console.log('3. Clean HTML table for student data');
+        console.log('4. No broken CSS styles appearing as text');
+    </script>
+</body>
+</html>

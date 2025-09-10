@@ -224,19 +224,76 @@
             const formData = getFormData();
             
             try {
-                const result = await ipcRenderer.invoke('generate-document', 'referat', formData);
+                // Step 1: Show confirmation dialog with data preview
+                const studentCount = formData.numele_elevilor.split('\n').filter(name => name.trim()).length;
+                const confirmOptions = {
+                    type: 'question',
+                    buttons: ['Generează Document', 'Anulează'],
+                    defaultId: 0,
+                    title: 'Confirmare Generare Document',
+                    message: 'Confirmați generarea documentului?',
+                    detail: `Referat nr: ${formData.numar_referat || 'necompletat'}\nData: ${formData.data_referat || 'necompletată'}\nNumăr elevi: ${studentCount}\nAprobat de: ${formData.aprobat_de || 'necompletat'}\n\nDorești să continui cu generarea documentului?`
+                };
+                
+                const confirmResult = await ipcRenderer.invoke('show-message-box', confirmOptions);
+                if (confirmResult.response !== 0) {
+                    return; // User cancelled
+                }
+                
+                // Step 2: Show save dialog
+                const defaultFileName = `Referat_Ucraineni_${formData.numar_referat || 'nou'}_${new Date().toISOString().split('T')[0]}.docx`;
+                const saveOptions = {
+                    title: 'Salvează documentul',
+                    defaultPath: defaultFileName,
+                    filters: [
+                        { name: 'Documente Word', extensions: ['docx'] },
+                        { name: 'Toate fișierele', extensions: ['*'] }
+                    ]
+                };
+                
+                const saveResult = await ipcRenderer.invoke('show-save-dialog', saveOptions);
+                if (saveResult.canceled) {
+                    return; // User cancelled save dialog
+                }
+                
+                // Step 3: Generate document with custom path
+                const result = await ipcRenderer.invoke('generate-document', 'referat', formData, saveResult.filePath);
                 
                 if (result.success) {
                     // Show success message and offer to open file
-                    if (confirm(`Document generat cu succes!\nFișier: ${result.fileName}\n\nDorești să deschizi fișierul?`)) {
+                    const successOptions = {
+                        type: 'info',
+                        buttons: ['Deschide Fișierul', 'OK'],
+                        defaultId: 0,
+                        title: 'Document Generat',
+                        message: 'Document generat cu succes!',
+                        detail: `Fișierul a fost salvat la:\n${result.filePath}\n\nDorești să deschizi fișierul?`
+                    };
+                    
+                    const openResult = await ipcRenderer.invoke('show-message-box', successOptions);
+                    if (openResult.response === 0) {
                         await ipcRenderer.invoke('open-file', result.filePath);
                     }
                 } else {
-                    alert('Eroare la generarea documentului: ' + result.error);
+                    const errorOptions = {
+                        type: 'error',
+                        buttons: ['OK'],
+                        title: 'Eroare',
+                        message: 'Eroare la generarea documentului',
+                        detail: result.error
+                    };
+                    await ipcRenderer.invoke('show-message-box', errorOptions);
                 }
             } catch (error) {
                 console.error('Generation error:', error);
-                alert('Eroare la generarea documentului: ' + error.message);
+                const errorOptions = {
+                    type: 'error',
+                    buttons: ['OK'],
+                    title: 'Eroare',
+                    message: 'Eroare la generarea documentului',
+                    detail: error.message
+                };
+                await ipcRenderer.invoke('show-message-box', errorOptions);
             }
         }
 

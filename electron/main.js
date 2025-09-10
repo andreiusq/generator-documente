@@ -50,7 +50,8 @@ function createWindow() {
       enableRemoteModule: false,
       webSecurity: false // Allow local file access
     },
-    icon: path.join(__dirname, 'assets/icon.png'),
+    icon: path.join(__dirname, 'assets/icon.png'), // Change this to your logo file
+    title: 'Generator Documente Minoritați', // Custom title
     show: false,
     titleBarStyle: 'default'
   });
@@ -246,12 +247,32 @@ ipcMain.handle('get-preview', async (event, templateType, formData) => {
   }
 });
 
-ipcMain.handle('generate-document', async (event, templateType, formData) => {
+ipcMain.handle('generate-document', async (event, templateType, formData, customOutputPath) => {
   try {
-    return await documentGenerator.generateDocument(templateType, formData);
+    return await documentGenerator.generateDocument(templateType, formData, customOutputPath);
   } catch (error) {
     console.error('Generation error:', error);
     return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('show-save-dialog', async (event, options) => {
+  try {
+    const result = await dialog.showSaveDialog(mainWindow, options);
+    return result;
+  } catch (error) {
+    console.error('Save dialog error:', error);
+    return { canceled: true, error: error.message };
+  }
+});
+
+ipcMain.handle('show-message-box', async (event, options) => {
+  try {
+    const result = await dialog.showMessageBox(mainWindow, options);
+    return result;
+  } catch (error) {
+    console.error('Message box error:', error);
+    return { response: 1, error: error.message };
   }
 });
 
