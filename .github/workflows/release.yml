@@ -68,7 +68,7 @@ jobs:
     if: |
       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||
       (github.event_name == 'workflow_dispatch')
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -81,59 +81,31 @@ jobs:
       with:
         path: ./artifacts
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ env.VERSION }}
-        release_name: Release ${{ env.VERSION }}
-        body: |
-          ## Changes in this Release
-          
-          ### New Features
-          - Auto-updater functionality for seamless updates
-          - Improved document table formatting for referat
-          - Enhanced preview system with better styling
-          
-          ### Improvements
-          - Added comprehensive test suite with Jest
-          - Better error handling and logging
-          - Responsive UI improvements
-          
-          ### Technical
-          - CI/CD pipeline with GitHub Actions
-          - Automated testing on multiple platforms
-          - Security audit integration
-          
-          **Note**: This version includes auto-update functionality. Future updates will be delivered automatically.
-          
-          ### Installation
-          1. Download the appropriate version for your operating system
-          2. Run the installer
-          3. The application will check for updates automatically
-          
-          ### System Requirements
-          - Windows 10/11, macOS 10.14+, or Linux (Ubuntu 18.04+)
-          - 4GB RAM minimum
-          - 500MB free disk space
-        draft: false
-        prerelease: false
-
-    - name: Upload assets to release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Rename artifacts for release
       run: |
         for file in ./artifacts/*/*; do
           os_name=$(basename $(dirname "$file"))
-          ext="${file##*.}"
           case "$os_name" in
             windows-2022) new_name="Documente-Windows.exe" ;;
             macos-latest) new_name="Documente-Mac.dmg" ;;
             ubuntu-latest) new_name="Documente-Linux.AppImage" ;;
             *) new_name="$(basename "$file")" ;;
           esac
-          echo "Uploading $file as $new_name..."
-          gh release upload "${VERSION}" "$file" --name "$new_name" --clobber
+          echo "Renaming $file -> $new_name"
+          mv "$file" "$(dirname "$file")/$new_name"
+        done
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.VERSION }}
+        name: Release ${{ env.VERSION }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload assets
+      run: |
+        for file in ./artifacts/*/*; do
+          echo "Uploading $file..."
+          gh release upload "${VERSION}" "$file" --clobber
         done
