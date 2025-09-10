@@ -11,6 +11,9 @@ on:
         required: true
         default: 'v1.0.0'
 
+permissions:
+  contents: write
+
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -123,6 +126,14 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         for file in ./artifacts/*/*; do
-          echo "Uploading $file..."
-          gh release upload "${VERSION}" "$file" --clobber
+          os_name=$(basename $(dirname "$file"))
+          ext="${file##*.}"
+          case "$os_name" in
+            windows-2022) new_name="Documente-Windows.exe" ;;
+            macos-latest) new_name="Documente-Mac.dmg" ;;
+            ubuntu-latest) new_name="Documente-Linux.AppImage" ;;
+            *) new_name="$(basename "$file")" ;;
+          esac
+          echo "Uploading $file as $new_name..."
+          gh release upload "${VERSION}" "$file" --name "$new_name" --clobber
         done
