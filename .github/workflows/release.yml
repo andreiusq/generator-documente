@@ -11,6 +11,9 @@ on:
         required: true
         default: 'v1.0.0'
 
+permissions:
+  contents: write
+
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -20,7 +23,7 @@ jobs:
     
     strategy:
       matrix:
-        os: [windows-2022, macos-latest, ubuntu-latest]
+        os: [windows-2022, ubuntu-latest]
 
     steps:
     - name: Checkout code
@@ -38,12 +41,6 @@ jobs:
     - name: Build Windows
       if: matrix.os == 'windows-2022'
       run: npm run dist-win
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Build macOS
-      if: matrix.os == 'macos-latest'
-      run: npm run dist-mac
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -65,7 +62,7 @@ jobs:
     if: |
       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||
       (github.event_name == 'workflow_dispatch')
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -78,51 +75,33 @@ jobs:
       with:
         path: ./artifacts
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ env.VERSION }}
-        release_name: Release ${{ env.VERSION }}
-        body: |
-          ## Changes in this Release
-          
-          ### New Features
-          - Auto-updater functionality for seamless updates
-          - Improved document table formatting for referat
-          - Enhanced preview system with better styling
-          
-          ### Improvements
-          - Added comprehensive test suite with Jest
-          - Better error handling and logging
-          - Responsive UI improvements
-          
-          ### Technical
-          - CI/CD pipeline with GitHub Actions
-          - Automated testing on multiple platforms
-          - Security audit integration
-          
-          **Note**: This version includes auto-update functionality. Future updates will be delivered automatically.
-          
-          ### Installation
-          1. Download the appropriate version for your operating system
-          2. Run the installer
-          3. The application will check for updates automatically
-          
-          ### System Requirements
-          - Windows 10/11, macOS 10.14+, or Linux (Ubuntu 18.04+)
-          - 4GB RAM minimum
-          - 500MB free disk space
-        draft: false
-        prerelease: false
-
-    - name: Upload assets to release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Rename executables only
       run: |
         for file in ./artifacts/*/*; do
-          echo "Uploading $file..."
-          gh release upload "${VERSION}" "$file" --clobber
+          if [ -f "$file" ]; then
+            os_name=$(basename $(dirname "$file"))
+            case "$os_name" in
+              windows-2022) [[ "$file" == *.exe ]] && mv "$file" "$(dirname "$file")/Documente-Windows.exe" ;;
+              ubuntu-latest) [[ "$file" == *.AppImage ]] && mv "$file" "$(dirname "$file")/Documente-Linux.AppImage" ;;
+            esac
+          fi
+        done
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.VERSION }}
+        name: Release ${{ env.VERSION }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload release assets (skip directories)
+      run: |
+        for file in ./artifacts/*/*; do
+          if [ -f "$file" ]; then
+            echo "Uploading $file..."
+            gh release upload "${VERSION}" "$file" --clobber
+          else
+            echo "Skipping directory $file"
+          fi
         done
