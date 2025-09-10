@@ -23,7 +23,7 @@ jobs:
     
     strategy:
       matrix:
-        os: [windows-2022, macos-latest, ubuntu-latest]
+        os: [windows-2022, ubuntu-latest]
 
     steps:
     - name: Checkout code
@@ -41,12 +41,6 @@ jobs:
     - name: Build Windows
       if: matrix.os == 'windows-2022'
       run: npm run dist-win
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Build macOS
-      if: matrix.os == 'macos-latest'
-      run: npm run dist-mac
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -87,12 +81,15 @@ jobs:
           os_name=$(basename $(dirname "$file"))
           case "$os_name" in
             windows-2022) new_name="Documente-Windows.exe" ;;
-            macos-latest) new_name="Documente-Mac.dmg" ;;
             ubuntu-latest) new_name="Documente-Linux.AppImage" ;;
             *) new_name="$(basename "$file")" ;;
           esac
-          echo "Renaming $file -> $new_name"
-          mv "$file" "$(dirname "$file")/$new_name"
+          if [ "$(basename "$file")" != "$new_name" ]; then
+            echo "Renaming $file -> $new_name"
+            mv "$file" "$(dirname "$file")/$new_name"
+          else
+            echo "Skipping rename for $file (already correct name)"
+          fi
         done
 
     - name: Create Release
