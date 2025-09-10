@@ -20,7 +20,7 @@ jobs:
     
     strategy:
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [windows-2022, macos-latest, ubuntu-latest]
 
     steps:
     - name: Checkout code
@@ -35,19 +35,19 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Build and publish to GitHub Releases (Windows)
-      if: matrix.os == 'windows-latest'
+    - name: Build Windows
+      if: matrix.os == 'windows-2022'
       run: npm run dist-win
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build and publish to GitHub Releases (macOS)
+    - name: Build macOS
       if: matrix.os == 'macos-latest'
       run: npm run dist-mac
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build and publish to GitHub Releases (Linux)
+    - name: Build Linux
       if: matrix.os == 'ubuntu-latest'
       run: npm run dist-linux
       env:
@@ -68,7 +68,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./artifacts
+
     - name: Create Release
+      id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -96,7 +102,6 @@ jobs:
           **Note**: This version includes auto-update functionality. Future updates will be delivered automatically.
           
           ### Installation
-          
           1. Download the appropriate version for your operating system
           2. Run the installer
           3. The application will check for updates automatically
@@ -105,6 +110,15 @@ jobs:
           - Windows 10/11, macOS 10.14+, or Linux (Ubuntu 18.04+)
           - 4GB RAM minimum
           - 500MB free disk space
-          
         draft: false
         prerelease: false
+
+    - name: Upload Release Assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./artifacts
+        asset_name: artifacts.zip
+        asset_content_type: application/zip
