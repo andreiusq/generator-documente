@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Dynamic Referat Form</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">Test Dynamic Referat Form</h1>
+        
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <label class="block text-sm font-medium text-gray-700">
+                    Lista elevilor
+                </label>
+                <button type="button" onclick="addStudentRow()" 
+                    class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors text-sm flex items-center">
+                    <span class="mr-1">+</span> Adaugă elev
+                </button>
+            </div>
+            
+            <div id="studentsContainer" class="space-y-4">
+                <!-- Primul rând de elev (implicit) -->
+                <div class="student-row bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-medium text-gray-700">Elevul 1</h4>
+                        <button type="button" onclick="removeStudentRow(this)" 
+                            class="text-red-500 hover:text-red-700 text-sm hidden">
+                            ✕ Șterge
+                        </button>
+                    </div>
+                    <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Nume și prenume</label>
+                            <input type="text" name="student_name_0" required
+                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Ex: Petrov Olena">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">CNP</label>
+                            <input type="text" name="student_cnp_0" required maxlength="13"
+                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="1234567890123">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Clasa actuală</label>
+                            <input type="text" name="student_class_0" required
+                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="a VI-a A">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Școala dorită</label>
+                            <input type="text" name="student_school_0" required
+                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Ex: Școala Gimnazială Nr. 15">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h3 class="text-sm font-medium text-blue-900 mb-2">Datele colectate:</h3>
+                <pre id="dataOutput" class="text-xs text-blue-800 whitespace-pre-wrap"></pre>
+            </div>
+            
+            <button type="button" onclick="showData()" 
+                class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                Afișează datele
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let studentCounter = 1;
+
+        function addStudentRow() {
+            const container = document.getElementById('studentsContainer');
+            const studentNumber = studentCounter;
+            
+            const studentRow = document.createElement('div');
+            studentRow.className = 'student-row bg-gray-50 p-4 rounded-lg border border-gray-200';
+            studentRow.innerHTML = `
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-sm font-medium text-gray-700">Elevul ${studentNumber + 1}</h4>
+                    <button type="button" onclick="removeStudentRow(this)" 
+                        class="text-red-500 hover:text-red-700 text-sm">
+                        ✕ Șterge
+                    </button>
+                </div>
+                <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Nume și prenume</label>
+                        <input type="text" name="student_name_${studentNumber}" required
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Ex: Petrov Olena">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">CNP</label>
+                        <input type="text" name="student_cnp_${studentNumber}" required maxlength="13"
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="1234567890123">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Clasa actuală</label>
+                        <input type="text" name="student_class_${studentNumber}" required
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="a VI-a A">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Școala dorită</label>
+                        <input type="text" name="student_school_${studentNumber}" required
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Ex: Școala Gimnazială Nr. 15">
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(studentRow);
+            studentCounter++;
+            updateRemoveButtons();
+        }
+
+        function removeStudentRow(button) {
+            const studentRow = button.closest('.student-row');
+            studentRow.remove();
+            updateStudentNumbers();
+            updateRemoveButtons();
+        }
+
+        function updateStudentNumbers() {
+            const studentRows = document.querySelectorAll('.student-row');
+            studentRows.forEach((row, index) => {
+                const title = row.querySelector('h4');
+                title.textContent = `Elevul ${index + 1}`;
+                
+                const inputs = row.querySelectorAll('input');
+                inputs.forEach(input => {
+                    const currentName = input.name;
+                    const baseName = currentName.split('_').slice(0, -1).join('_');
+                    input.name = `${baseName}_${index}`;
+                });
+            });
+        }
+
+        function updateRemoveButtons() {
+            const studentRows = document.querySelectorAll('.student-row');
+            studentRows.forEach((row, index) => {
+                const removeButton = row.querySelector('button[onclick*="removeStudentRow"]');
+                if (studentRows.length > 1) {
+                    removeButton.classList.remove('hidden');
+                } else {
+                    removeButton.classList.add('hidden');
+                }
+            });
+        }
+
+        function showData() {
+            const studentRows = document.querySelectorAll('.student-row');
+            const data = {
+                students: [],
+                cnps: [],
+                classes: [],
+                schools: []
+            };
+            
+            studentRows.forEach((row, index) => {
+                const name = row.querySelector(`input[name="student_name_${index}"]`).value;
+                const cnp = row.querySelector(`input[name="student_cnp_${index}"]`).value;
+                const studentClass = row.querySelector(`input[name="student_class_${index}"]`).value;
+                const school = row.querySelector(`input[name="student_school_${index}"]`).value;
+                
+                if (name.trim()) {
+                    data.students.push(name.trim());
+                    data.cnps.push(cnp.trim());
+                    data.classes.push(studentClass.trim());
+                    data.schools.push(school.trim());
+                }
+            });
+            
+            const formattedData = {
+                numele_elevilor: data.students.join('\n'),
+                cnp_elevi: data.cnps.join('\n'),
+                clasa_elevilor: data.classes.join('\n'),
+                scoli_dorite: data.schools.join('\n')
+            };
+            
+            document.getElementById('dataOutput').textContent = JSON.stringify(formattedData, null, 2);
+        }
+
+        // Initialize
+        updateRemoveButtons();
+    </script>
+</body>
+</html>

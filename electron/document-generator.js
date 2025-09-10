@@ -58,17 +58,32 @@ class DocumentGenerator {
                 const eleviArray = formData.numele_elevilor.split('\n');
                 const cnpArray = formData.cnp_elevi.split('\n');
                 
+                // Handle new individual student data or fallback to old format
+                const clasaArray = formData.clasa_elevilor ? formData.clasa_elevilor.split('\n') : [];
+                const scoliArray = formData.scoli_dorite ? formData.scoli_dorite.split('\n') : [];
+                
                 // Create table rows for each student
                 let tabelElevi = '';
                 for (let i = 0; i < eleviArray.length; i++) {
                     const nume = eleviArray[i] ? eleviArray[i].trim() : '';
                     const cnp = cnpArray[i] ? cnpArray[i].trim() : '';
+                    const clasa = clasaArray[i] ? clasaArray[i].trim() : (formData.clasa_elevilor || '');
+                    const scoala = scoliArray[i] ? scoliArray[i].trim() : (formData.unitatea_invatamant || '');
                     
                     if (nume) {
-                        // Add table row for each student
-                        tabelElevi += `${i + 1}\t${nume}\t${cnp}\t${formData.clasa_elevilor}\n`;
+                        // Tab-separated format for Word table: Nr. crt. | Nume | CNP | Clasa | Școala dorită
+                        tabelElevi += `${i + 1}\t${nume}\t${cnp}\t${clasa}\t${scoala}\n`;
                     }
                 }
+                
+                // Remove the last newline
+                tabelElevi = tabelElevi.trim();
+
+                // Also create individual placeholders for template compatibility
+                const firstStudent = eleviArray[0] ? eleviArray[0].trim() : '';
+                const firstCnp = cnpArray[0] ? cnpArray[0].trim() : '';
+                const firstClasa = clasaArray[0] ? clasaArray[0].trim() : (formData.clasa_elevilor || '');
+                const firstScoala = scoliArray[0] ? scoliArray[0].trim() : (formData.unitatea_invatamant || '');
 
                 // Format members list
                 const membriArray = formData.membrii_comisiei.split('\n');
@@ -81,6 +96,10 @@ class DocumentGenerator {
                     '[NUMAR_REFERAT]': formData.numar_referat || '',
                     '[DATA_REFERAT]': formData.data_referat ? this.formatDate(formData.data_referat) : '',
                     '[NUMELE_ELEVILOR]': tabelElevi,
+                    '[CNP_ELEV]': firstCnp,
+                    '[CLASA_ELEV]': firstClasa,
+                    '[SCOALA_ELEV]': firstScoala,
+                    '[NR_CRT]': '1',
                     '[CLASA_ELEVILOR]': formData.clasa_elevilor || '',
                     '[UNITATEA_INVATAMANT]': formData.unitatea_invatamant || '',
                     '[MEMBRI_COMISIEI]': membriList,
@@ -107,12 +126,17 @@ class DocumentGenerator {
         
         // Replace placeholders
         let modifiedXml = documentXml;
-        for (const [placeholder, value] of Object.entries(replacements)) {
-            // Escape special regex characters in placeholder
-            const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            // Convert newlines to proper Word XML line breaks
-            const wordValue = value.replace(/\n/g, '</w:t><w:br/><w:t>');
-            modifiedXml = modifiedXml.replace(new RegExp(escapedPlaceholder, 'g'), wordValue);
+        
+        // Special handling for student table data
+        if (replacements['[NUMELE_ELEVILOR]'] && typeof replacements['[NUMELE_ELEVILOR]'] === 'string' && replacements['[NUMELE_ELEVILOR]'].includes('\t')) {
+            modifiedXml = this.replaceStudentTableData(modifiedXml, replacements);
+        } else {
+            // Standard placeholder replacement
+            for (const [placeholder, value] of Object.entries(replacements)) {
+                const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const wordValue = value.replace(/\n/g, '</w:t><w:br/><w:t>');
+                modifiedXml = modifiedXml.replace(new RegExp(escapedPlaceholder, 'g'), wordValue);
+            }
         }
         
         // Update the document.xml in the zip
@@ -124,6 +148,63 @@ class DocumentGenerator {
         
         fs.writeFileSync(outputPath, outputBuffer);
         return outputPath;
+    }
+
+    replaceStudentTableData(documentXml, replacements) {
+        const studentData = replacements['[NUMELE_ELEVILOR]'];
+        const studentRows = studentData.split('\n').filter(row => row.trim());
+        
+        // Find the table row that contains the student placeholder
+        const tableRowRegex = /<w:tr[^>]*>[\s\S]*?\[NUMELE_ELEVILOR\][\s\S]*?<\/w:tr>/;
+        const tableRowMatch = documentXml.match(tableRowRegex);
+        
+        if (!tableRowMatch) {
+            // Fallback to regular replacement if no table structure found
+            return this.replaceRegularPlaceholders(documentXml, replacements);
+        }
+        
+        const originalRow = tableRowMatch[0];
+        let newRows = '';
+        
+        // Create a new table row for each student
+        studentRows.forEach((studentRowData, index) => {
+            const [nr, nume, cnp, clasa, scoala] = studentRowData.split('\t');
+            
+            let newRow = originalRow;
+            
+            // Replace placeholders in this row
+            newRow = newRow.replace(/\[NUMELE_ELEVILOR\]/g, nume || '');
+            newRow = newRow.replace(/\[CNP_ELEV\]/g, cnp || '');
+            newRow = newRow.replace(/\[CLASA_ELEV\]/g, clasa || '');
+            newRow = newRow.replace(/\[SCOALA_ELEV\]/g, scoala || '');
+            newRow = newRow.replace(/\[NR_CRT\]/g, (index + 1).toString());
+            
+            newRows += newRow;
+        });
+        
+        // Replace the original row with all new rows
+        let modifiedXml = documentXml.replace(tableRowRegex, newRows);
+        
+        // Replace other placeholders normally
+        for (const [placeholder, value] of Object.entries(replacements)) {
+            if (placeholder !== '[NUMELE_ELEVILOR]') {
+                const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const wordValue = value.replace(/\n/g, '</w:t><w:br/><w:t>');
+                modifiedXml = modifiedXml.replace(new RegExp(escapedPlaceholder, 'g'), wordValue);
+            }
+        }
+        
+        return modifiedXml;
+    }
+
+    replaceRegularPlaceholders(documentXml, replacements) {
+        let modifiedXml = documentXml;
+        for (const [placeholder, value] of Object.entries(replacements)) {
+            const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const wordValue = value.replace(/\n/g, '</w:t><w:br/><w:t>');
+            modifiedXml = modifiedXml.replace(new RegExp(escapedPlaceholder, 'g'), wordValue);
+        }
+        return modifiedXml;
     }
 
     async getPreview(templateType, formData) {
@@ -156,20 +237,32 @@ class DocumentGenerator {
                 const eleviArray = formData.numele_elevilor.split('\n');
                 const cnpArray = formData.cnp_elevi.split('\n');
                 
+                // Handle new individual student data or fallback to old format
+                const clasaArray = formData.clasa_elevilor ? formData.clasa_elevilor.split('\n') : [];
+                const scoliArray = formData.scoli_dorite ? formData.scoli_dorite.split('\n') : [];
+                
                 // Create table rows for each student with proper tab separation
                 let tabelElevi = '';
                 for (let i = 0; i < eleviArray.length; i++) {
                     const nume = eleviArray[i] ? eleviArray[i].trim() : '';
                     const cnp = cnpArray[i] ? cnpArray[i].trim() : '';
+                    const clasa = clasaArray[i] ? clasaArray[i].trim() : (formData.clasa_elevilor || '');
+                    const scoala = scoliArray[i] ? scoliArray[i].trim() : (formData.unitatea_invatamant || '');
                     
                     if (nume) {
-                        // Tab-separated format for Word table: Nr. crt. | Nume | CNP | Clasa
-                        tabelElevi += `${i + 1}\t${nume}\t${cnp}\t${formData.clasa_elevilor || ''}\n`;
+                        // Tab-separated format for Word table: Nr. crt. | Nume | CNP | Clasa | Școala dorită
+                        tabelElevi += `${i + 1}\t${nume}\t${cnp}\t${clasa}\t${scoala}\n`;
                     }
                 }
                 
                 // Remove the last newline
                 tabelElevi = tabelElevi.trim();
+                
+                // Also create individual placeholders for template compatibility
+                const firstStudent = eleviArray[0] ? eleviArray[0].trim() : '';
+                const firstCnp = cnpArray[0] ? cnpArray[0].trim() : '';
+                const firstClasa = clasaArray[0] ? clasaArray[0].trim() : (formData.clasa_elevilor || '');
+                const firstScoala = scoliArray[0] ? scoliArray[0].trim() : (formData.unitatea_invatamant || '');
 
                 const membriArray = formData.membrii_comisiei.split('\n');
                 const membriList = membriArray
@@ -181,6 +274,10 @@ class DocumentGenerator {
                     '[NUMAR_REFERAT]': formData.numar_referat || '[NUMĂR REFERAT]',
                     '[DATA_REFERAT]': formData.data_referat ? this.formatDate(formData.data_referat) : '[DATA]',
                     '[NUMELE_ELEVILOR]': tabelElevi || '[LISTA ELEVI]',
+                    '[CNP_ELEV]': firstCnp || '[CNP ELEV]',
+                    '[CLASA_ELEV]': firstClasa || '[CLASA ELEV]',
+                    '[SCOALA_ELEV]': firstScoala || '[ȘCOALA ELEV]',
+                    '[NR_CRT]': '1',
                     '[CLASA_ELEVILOR]': formData.clasa_elevilor || '[CLASA]',
                     '[UNITATEA_INVATAMANT]': formData.unitatea_invatamant || '[UNITATEA DE ÎNVĂȚĂMÂNT]',
                     '[MEMBRI_COMISIEI]': membriList || '[MEMBRI COMISIEI]',
@@ -309,18 +406,20 @@ class DocumentGenerator {
                                         <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">Numele și prenumele</th>
                                         <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">CNP</th>
                                         <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">Clasa</th>
+                                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">Școala dorită</th>
                                     </tr>
                                 </thead>
                                 <tbody>`;
                         
                         tableRows.forEach(row => {
-                            const [nr, nume, cnp, clasa] = row.split('\t');
+                            const [nr, nume, cnp, clasa, scoala] = row.split('\t');
                             tableHtml += `
                                 <tr>
                                     <td style="border: 1px solid #d1d5db; padding: 8px; color: #0066cc; font-weight: 500;">${nr || ''}</td>
                                     <td style="border: 1px solid #d1d5db; padding: 8px; color: #0066cc; font-weight: 500;">${nume || ''}</td>
                                     <td style="border: 1px solid #d1d5db; padding: 8px; color: #0066cc; font-weight: 500;">${cnp || ''}</td>
                                     <td style="border: 1px solid #d1d5db; padding: 8px; color: #0066cc; font-weight: 500;">${clasa || ''}</td>
+                                    <td style="border: 1px solid #d1d5db; padding: 8px; color: #0066cc; font-weight: 500;">${scoala || ''}</td>
                                 </tr>`;
                         });
                         

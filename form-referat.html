@@ -50,47 +50,55 @@
                             </div>
                         </div>
 
-                        <!-- Numele și prenumele elevilor -->
+                        <!-- Lista dinamică de elevi -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Numele și prenumele elevilor
-                            </label>
-                            <textarea name="numele_elevilor" rows="4" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Ex: &#10;Petrov Olena&#10;Kovalenko Viktor&#10;Moroz Iana"></textarea>
-                            <p class="text-sm text-gray-500 mt-1">Introduceți câte un elev pe linie</p>
-                        </div>
-
-                        <!-- CNP elevi -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                CNP elevi
-                            </label>
-                            <textarea name="cnp_elevi" rows="4" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Ex: &#10;1234567890123&#10;9876543210987&#10;5647382910456"></textarea>
-                            <p class="text-sm text-gray-500 mt-1">Introduceți câte un CNP pe linie, în aceeași ordine ca numele</p>
-                        </div>
-
-                        <div class="grid gap-6 md:grid-cols-2">
-                            <!-- Clasa elevilor -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Clasa elevilor
+                            <div class="flex items-center justify-between mb-4">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Lista elevilor
                                 </label>
-                                <input type="text" name="clasa_elevilor" required
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="Ex: a VI-a A">
+                                <button type="button" onclick="addStudentRow()" 
+                                    class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors text-sm flex items-center">
+                                    <span class="mr-1">+</span> Adaugă elev
+                                </button>
                             </div>
-
-                            <!-- Unitatea de învățământ -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Unitatea de învățământ
-                                </label>
-                                <input type="text" name="unitatea_invatamant" required
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="Ex: Școala Gimnazială Nr. 15">
+                            
+                            <div id="studentsContainer" class="space-y-4">
+                                <!-- Primul rând de elev (implicit) -->
+                                <div class="student-row bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <h4 class="text-sm font-medium text-gray-700">Elevul 1</h4>
+                                        <button type="button" onclick="removeStudentRow(this)" 
+                                            class="text-red-500 hover:text-red-700 text-sm hidden">
+                                            ✕ Șterge
+                                        </button>
+                                    </div>
+                                    <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Nume și prenume</label>
+                                            <input type="text" name="student_name_0" required
+                                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                                placeholder="Ex: Petrov Olena">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">CNP</label>
+                                            <input type="text" name="student_cnp_0" required maxlength="13"
+                                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                                placeholder="1234567890123">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Clasa actuală</label>
+                                            <input type="text" name="student_class_0" required
+                                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                                placeholder="a VI-a A">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Școala dorită</label>
+                                            <input type="text" name="student_school_0" required
+                                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                                placeholder="Ex: Școala Gimnazială Nr. 15">
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -174,9 +182,41 @@
             const form = document.getElementById('referatForm');
             const formData = new FormData(form);
             const data = {};
+            
+            // Gather regular form fields
             for (let [key, value] of formData.entries()) {
-                data[key] = value;
+                if (!key.startsWith('student_')) {
+                    data[key] = value;
+                }
             }
+            
+            // Gather student data dynamically
+            const studentRows = document.querySelectorAll('.student-row');
+            const students = [];
+            const cnps = [];
+            const classes = [];
+            const schools = [];
+            
+            studentRows.forEach((row, index) => {
+                const name = formData.get(`student_name_${index}`) || '';
+                const cnp = formData.get(`student_cnp_${index}`) || '';
+                const studentClass = formData.get(`student_class_${index}`) || '';
+                const school = formData.get(`student_school_${index}`) || '';
+                
+                if (name.trim()) {
+                    students.push(name.trim());
+                    cnps.push(cnp.trim());
+                    classes.push(studentClass.trim());
+                    schools.push(school.trim());
+                }
+            });
+            
+            // Convert to the expected format for backward compatibility
+            data.numele_elevilor = students.join('\n');
+            data.cnp_elevi = cnps.join('\n');
+            data.clasa_elevilor = classes.join('\n');
+            data.scoli_dorite = schools.join('\n');
+            
             return data;
         }
 
@@ -200,6 +240,103 @@
             }
         }
 
+        let studentCounter = 1;
+
+        function addStudentRow() {
+            const container = document.getElementById('studentsContainer');
+            const studentNumber = studentCounter;
+            
+            const studentRow = document.createElement('div');
+            studentRow.className = 'student-row bg-gray-50 p-4 rounded-lg border border-gray-200';
+            studentRow.innerHTML = `
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-sm font-medium text-gray-700">Elevul ${studentNumber + 1}</h4>
+                    <button type="button" onclick="removeStudentRow(this)" 
+                        class="text-red-500 hover:text-red-700 text-sm">
+                        ✕ Șterge
+                    </button>
+                </div>
+                <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Nume și prenume</label>
+                        <input type="text" name="student_name_${studentNumber}" required
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Ex: Petrov Olena">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">CNP</label>
+                        <input type="text" name="student_cnp_${studentNumber}" required maxlength="13"
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="1234567890123">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Clasa actuală</label>
+                        <input type="text" name="student_class_${studentNumber}" required
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="a VI-a A">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Școala dorită</label>
+                        <input type="text" name="student_school_${studentNumber}" required
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Ex: Școala Gimnazială Nr. 15">
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(studentRow);
+            studentCounter++;
+            
+            // Add event listeners to new inputs
+            const newInputs = studentRow.querySelectorAll('input');
+            newInputs.forEach(input => {
+                input.addEventListener('input', updatePreview);
+                input.addEventListener('change', updatePreview);
+            });
+            
+            // Show remove buttons if there's more than one student
+            updateRemoveButtons();
+            updatePreview();
+        }
+
+        function removeStudentRow(button) {
+            const studentRow = button.closest('.student-row');
+            studentRow.remove();
+            
+            // Update student numbers
+            updateStudentNumbers();
+            updateRemoveButtons();
+            updatePreview();
+        }
+
+        function updateStudentNumbers() {
+            const studentRows = document.querySelectorAll('.student-row');
+            studentRows.forEach((row, index) => {
+                const title = row.querySelector('h4');
+                title.textContent = `Elevul ${index + 1}`;
+                
+                // Update input names to maintain sequential numbering
+                const inputs = row.querySelectorAll('input');
+                inputs.forEach(input => {
+                    const currentName = input.name;
+                    const baseName = currentName.split('_').slice(0, -1).join('_');
+                    input.name = `${baseName}_${index}`;
+                });
+            });
+        }
+
+        function updateRemoveButtons() {
+            const studentRows = document.querySelectorAll('.student-row');
+            studentRows.forEach((row, index) => {
+                const removeButton = row.querySelector('button[onclick*="removeStudentRow"]');
+                if (studentRows.length > 1) {
+                    removeButton.classList.remove('hidden');
+                } else {
+                    removeButton.classList.add('hidden');
+                }
+            });
+        }
+
         // Add event listeners to all form inputs
         document.addEventListener('DOMContentLoaded', function() {
             const inputs = document.querySelectorAll('input, textarea');
@@ -208,7 +345,8 @@
                 input.addEventListener('change', updatePreview);
             });
             
-            // Initial preview update
+            // Initial setup
+            updateRemoveButtons();
             updatePreview();
         });
     </script>
