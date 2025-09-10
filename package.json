@@ -36,7 +36,7 @@
     "php-server": "^0.2.1"
   },
   "build": {
-    "appId": "ro.starquess.generator-documente",
+    "appId": "ro.andreiusq.generator-documente",
     "productName": "Generator Documente Minoritati",
     "directories": {
       "output": "dist"
@@ -44,8 +44,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "starquess",
-        "repo": "minoritati-generare"
+        "owner": "andreiusq",
+        "repo": "generator-documente"
       }
     ],
     "files": [
