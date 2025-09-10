@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "docx-preview": "^0.3.6",
+    "electron-log": "^5.4.3",
     "electron-updater": "^6.1.7",
     "express": "^4.21.2",
     "jszip": "^3.10.1",

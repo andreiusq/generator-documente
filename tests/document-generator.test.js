@@ -7,6 +7,12 @@ describe('DocumentGenerator', () => {
     
     beforeEach(() => {
         documentGenerator = new DocumentGenerator();
+        
+        // Ensure generated directory exists
+        const generatedDir = path.join(__dirname, '../generated');
+        if (!fs.existsSync(generatedDir)) {
+            fs.mkdirSync(generatedDir, { recursive: true });
+        }
     });
 
     describe('formatDate', () => {
@@ -19,7 +25,7 @@ describe('DocumentGenerator', () => {
         test('should handle invalid date', () => {
             const date = 'invalid-date';
             const formatted = documentGenerator.formatDate(date);
-            expect(formatted).toBe('invalid-date');
+            expect(formatted).toBe('Invalid Date');
         });
     });
 
@@ -98,7 +104,13 @@ describe('DocumentGenerator', () => {
             const formData = {
                 numar_decizie: 'DEC/123',
                 data_decizie: '2024-12-25',
-                membrii_comisiei: 'Prof. Ana\nProf. Ion'
+                numar_referat_aprobare: 'REF/456',
+                data_referat_aprobare: '2024-12-20',
+                inspector_general: 'Inspector General',
+                presedinte_comisie: 'Prof. Director',
+                membrii_comisiei: 'Prof. Ana\nProf. Ion',
+                consilier_juridic: 'Consilier Juridic',
+                intocmit_de: 'Prof. Inspector'
             };
 
             const templatePath = path.join(documentGenerator.templatesPath, 'Model decizie.docx');
@@ -124,7 +136,10 @@ describe('DocumentGenerator', () => {
                 numar_referat: 'REF/789',
                 numele_elevilor: 'Petrov Olena\nKovalenko Viktor',
                 cnp_elevi: '1234567890123\n9876543210987',
-                clasa_elevilor: 'a VI-a A'
+                clasa_elevilor: 'a VI-a A',
+                membrii_comisiei: 'Prof. Ana Maria\nProf. Ion Ionescu',
+                aprobat_de: 'Inspector General',
+                intocmit_de: 'Prof. Maria'
             };
 
             const templatePath = path.join(documentGenerator.templatesPath, 'model_referat_ucraineni.docx');

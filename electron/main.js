@@ -1,11 +1,13 @@
-const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, shell, Menu } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const express = require('express');
 const DocumentGenerator = require('./document-generator');
+const AutoUpdater = require('./auto-updater');
 
 let mainWindow;
 let phpServer;
+let autoUpdater;
 const PORT = 3000;
 
 // Express server to serve PHP files
@@ -64,6 +66,15 @@ function createWindow() {
     mainWindow.show();
   });
 
+  // Create application menu
+  createApplicationMenu();
+
+  // Initialize auto-updater (only in production)
+  if (!process.env.ELECTRON_IS_DEV) {
+    autoUpdater = new AutoUpdater();
+    autoUpdater.checkForUpdatesOnStartup();
+  }
+
   // Open DevTools in development
   if (process.env.ELECTRON_IS_DEV) {
     mainWindow.webContents.openDevTools();
@@ -79,6 +90,111 @@ function createWindow() {
     require('electron').shell.openExternal(url);
     return { action: 'deny' };
   });
+}
+
+// Create application menu
+function createApplicationMenu() {
+  const template = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'New Document',
+          accelerator: 'CmdOrCtrl+N',
+          click: () => {
+            mainWindow.webContents.executeJavaScript('window.location.href = "index.html"');
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Exit',
+          accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
+          click: () => {
+            app.quit();
+          }
+        }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        {
+          label: 'Reload',
+          accelerator: 'CmdOrCtrl+R',
+          click: () => {
+            mainWindow.reload();
+          }
+        },
+        {
+          label: 'Force Reload',
+          accelerator: 'CmdOrCtrl+Shift+R',
+          click: () => {
+            mainWindow.webContents.reloadIgnoringCache();
+          }
+        },
+        {
+          label: 'Developer Tools',
+          accelerator: process.platform === 'darwin' ? 'Alt+Cmd+I' : 'Ctrl+Shift+I',
+          click: () => {
+            mainWindow.webContents.toggleDevTools();
+          }
+        }
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'Check for Updates',
+          click: () => {
+            if (autoUpdater) {
+              autoUpdater.checkForUpdates();
+            } else {
+              dialog.showMessageBox(mainWindow, {
+                type: 'info',
+                title: 'Updates',
+                message: 'Update checking is disabled in development mode.',
+                detail: 'Updates are only available in the production version of the application.'
+              });
+            }
+          }
+        },
+        {
+          label: 'About',
+          click: () => {
+            const version = require('../package.json').version;
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              title: 'About Generator Documente Minoritati',
+              message: `Generator Documente Minoritati v${version}`,
+              detail: 'Generator documente pentru minoritati - aplicatie desktop\n\nPowered by Starquess România'
+            });
+          }
+        }
+      ]
+    }
+  ];
+
+  // macOS specific menu adjustments
+  if (process.platform === 'darwin') {
+    template.unshift({
+      label: app.getName(),
+      submenu: [
+        { label: 'About ' + app.getName(), role: 'about' },
+        { type: 'separator' },
+        { label: 'Services', role: 'services', submenu: [] },
+        { type: 'separator' },
+        { label: 'Hide ' + app.getName(), accelerator: 'Command+H', role: 'hide' },
+        { label: 'Hide Others', accelerator: 'Command+Alt+H', role: 'hideothers' },
+        { label: 'Show All', role: 'unhide' },
+        { type: 'separator' },
+        { label: 'Quit', accelerator: 'Command+Q', click: () => app.quit() }
+      ]
+    });
+  }
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
 }
 
 // App event handlers

@@ -1,0 +1,113 @@
+name: Release Application
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm test
+
+    - name: Build and publish to GitHub Releases (Windows)
+      if: matrix.os == 'windows-latest'
+      run: npm run dist-win
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and publish to GitHub Releases (macOS)
+      if: matrix.os == 'macos-latest'
+      run: npm run dist-mac
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and publish to GitHub Releases (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: npm run dist-linux
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload release artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-${{ matrix.os }}
+        path: dist/
+
+  create-release:
+    needs: release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          ## Changes in this Release
+          
+          ### New Features
+          - Auto-updater functionality for seamless updates
+          - Improved document table formatting for referat
+          - Enhanced preview system with better styling
+          
+          ### Improvements
+          - Added comprehensive test suite with Jest
+          - Better error handling and logging
+          - Responsive UI improvements
+          
+          ### Technical
+          - CI/CD pipeline with GitHub Actions
+          - Automated testing on multiple platforms
+          - Security audit integration
+          
+          **Note**: This version includes auto-update functionality. Future updates will be delivered automatically.
+          
+          ### Installation
+          
+          1. Download the appropriate version for your operating system
+          2. Run the installer
+          3. The application will check for updates automatically
+          
+          ### System Requirements
+          - Windows 10/11, macOS 10.14+, or Linux (Ubuntu 18.04+)
+          - 4GB RAM minimum
+          - 500MB free disk space
+          
+        draft: false
+        prerelease: false
