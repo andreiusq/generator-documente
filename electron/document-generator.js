@@ -103,7 +103,6 @@ class DocumentGenerator {
                     '[CNP_ELEV]': firstCnp,
                     '[CLASA_ELEV]': firstClasa,
                     '[SCOALA_ELEV]': firstScoala,
-                    '[NR_CRT]': '1',
                     '[CLASA_ELEVILOR]': formData.clasa_elevilor || '',
                     '[UNITATEA_INVATAMANT]': formData.unitatea_invatamant || '',
                     '[MEMBRI_COMISIEI]': membriList,
@@ -196,7 +195,6 @@ class DocumentGenerator {
             newRow = newRow.replace(/\[CNP_ELEV\]/g, cnp || '');
             newRow = newRow.replace(/\[CLASA_ELEV\]/g, clasa || '');
             newRow = newRow.replace(/\[SCOALA_ELEV\]/g, scoala || '');
-            newRow = newRow.replace(/\[NR_CRT\]/g, (index + 1).toString());
             
             newRows += newRow;
         });
@@ -300,7 +298,6 @@ class DocumentGenerator {
                     '[CNP_ELEV]': firstCnp || '[CNP ELEV]',
                     '[CLASA_ELEV]': firstClasa || '[CLASA ELEV]',
                     '[SCOALA_ELEV]': firstScoala || '[ȘCOALA ELEV]',
-                    '[NR_CRT]': '1',
                     '[CLASA_ELEVILOR]': formData.clasa_elevilor || '[CLASA]',
                     '[UNITATEA_INVATAMANT]': formData.unitatea_invatamant || '[UNITATEA DE ÎNVĂȚĂMÂNT]',
                     '[MEMBRI_COMISIEI]': membriList || '[MEMBRI COMISIEI]',
