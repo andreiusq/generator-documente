@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formular Model Decizie</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="mb-6 text-center">
+                <h1 class="text-2xl font-bold text-gray-900 mb-2">Formular Model Decizie</h1>
+                <p class="text-gray-600">Completează câmpurile și vezi preview-ul în timp real</p>
+                <a href="index.html" class="text-blue-600 hover:text-blue-800 text-sm">&larr; Înapoi la selecție</a>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Preview Column -->
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Preview Document</h2>
+                    <div id="document-preview" class="bg-gray-50 rounded border overflow-auto" style="height: 70vh; max-height: 800px;">
+                        <div class="flex items-center justify-center h-full">
+                            <p class="text-center text-gray-600">Încărcăm preview-ul...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Column -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <form id="decizieForm" class="space-y-6">
+                        <div class="grid gap-6 md:grid-cols-2">
+                            <!-- Numărul deciziei -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Numărul deciziei
+                                </label>
+                                <input type="text" name="numar_decizie" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Ex: 123">
+                            </div>
+
+                            <!-- Data -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Data (zi/lună/an)
+                                </label>
+                                <input type="date" name="data_decizie" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+
+                        <div class="grid gap-6 md:grid-cols-2">
+                            <!-- Numărul referatului de aprobare -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Numărul referatului de aprobare
+                                </label>
+                                <input type="text" name="numar_referat_aprobare" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Ex: REF/456">
+                            </div>
+
+                            <!-- Data referatului de aprobare -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Data referatului de aprobare (zi.lună.an)
+                                </label>
+                                <input type="date" name="data_referat_aprobare" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+
+                        <!-- Numirea doamnei inspector general -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Numirea doamnei inspector general (nr/zi.lună.an)
+                            </label>
+                            <input type="text" name="inspector_general" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Ex: Inspector General Maria Popescu (nr.789/12.05.2024)">
+                        </div>
+
+                        <!-- Președintele comisiei -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Președintele comisiei (nume + funcție)
+                            </label>
+                            <input type="text" name="presedinte_comisie" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Ex: Prof. Ion Ionescu - Director Școală">
+                        </div>
+
+                        <!-- Membrii comisiei -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Membrii comisiei (lista profesorilor)
+                            </label>
+                            <textarea name="membrii_comisiei" rows="4" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Ex: &#10;Prof. Ana Maria - Matematică&#10;Prof. Gheorghe Vasile - Română&#10;Prof. Elena Popa - Engleză"></textarea>
+                            <p class="text-sm text-gray-500 mt-1">Introduceți câte un profesor pe linie</p>
+                        </div>
+
+                        <!-- Consilier juridic -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Consilier juridic (Nume complet + funcție)
+                            </label>
+                            <input type="text" name="consilier_juridic" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Ex: Cons. juridic Andrei Mocanu">
+                        </div>
+
+                        <!-- Întocmit de -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Întocmit de (nume + funcție)
+                            </label>
+                            <input type="text" name="intocmit_de" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Ex: Prof. Maria Georgescu - Inspector școlar">
+                        </div>
+
+                        <div class="flex gap-4 pt-4">
+                            <button type="button" onclick="generateDocument()" 
+                                class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                                Generează Document
+                            </button>
+                            <a href="index.html" 
+                                class="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400 transition-colors">
+                                Anulează
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        let updateTimeout;
+        
+        // Live preview functionality
+        function updatePreview() {
+            if (updateTimeout) {
+                clearTimeout(updateTimeout);
+            }
+            
+            updateTimeout = setTimeout(async () => {
+                const formData = getFormData();
+                
+                try {
+                    const result = await ipcRenderer.invoke('get-preview', 'decizie', formData);
+                    const previewDiv = document.getElementById('document-preview');
+                    
+                    if (result.success) {
+                        previewDiv.innerHTML = result.html;
+                    } else {
+                        previewDiv.innerHTML = '<div class="text-red-600">Error: ' + result.error + '</div>';
+                    }
+                } catch (error) {
+                    console.error('Preview error:', error);
+                    document.getElementById('document-preview').innerHTML = '<div class="text-red-600">Error loading preview</div>';
+                }
+            }, 300);
+        }
+
+        function getFormData() {
+            const form = document.getElementById('decizieForm');
+            const formData = new FormData(form);
+            const data = {};
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+            return data;
+        }
+
+        async function generateDocument() {
+            const formData = getFormData();
+            
+            try {
+                const result = await ipcRenderer.invoke('generate-document', 'decizie', formData);
+                
+                if (result.success) {
+                    // Show success message and offer to open file
+                    if (confirm(`Document generat cu succes!\nFișier: ${result.fileName}\n\nDorești să deschizi fișierul?`)) {
+                        await ipcRenderer.invoke('open-file', result.filePath);
+                    }
+                } else {
+                    alert('Eroare la generarea documentului: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Generation error:', error);
+                alert('Eroare la generarea documentului: ' + error.message);
+            }
+        }
+
+        // Add event listeners to all form inputs
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('input, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('input', updatePreview);
+                input.addEventListener('change', updatePreview);
+            });
+            
+            // Initial preview update
+            updatePreview();
+        });
+    </script>
+</body>
+</html>

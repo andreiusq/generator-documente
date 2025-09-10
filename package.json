@@ -1,0 +1,85 @@
+{
+  "name": "generator-documente-minoritati",
+  "version": "1.0.0",
+  "description": "Generator documente pentru minoritati - aplicatie desktop",
+  "main": "electron/main.js",
+  "author": "Starquess România",
+  "license": "MIT",
+  "homepage": "./",
+  "scripts": {
+    "electron": "electron .",
+    "electron-dev": "ELECTRON_IS_DEV=1 electron .",
+    "build": "electron-builder",
+    "dist": "npm run build",
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist-win": "electron-builder --win",
+    "dist-mac": "electron-builder --mac",
+    "dist-linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^25.9.8",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "docx-preview": "^0.3.6",
+    "express": "^4.21.2",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.10.0",
+    "php-server": "^0.2.1"
+  },
+  "build": {
+    "appId": "ro.starquess.generator-documente",
+    "productName": "Generator Documente Minoritati",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "templates/**/*",
+      "generated/**/*",
+      "*.php",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "php-server",
+        "to": "php-server"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "electron/assets/icon.ico"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "electron/assets/icon.icns"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "electron/assets/icon.png"
+    }
+  }
+}
