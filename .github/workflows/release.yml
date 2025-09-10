@@ -75,20 +75,15 @@ jobs:
       with:
         path: ./artifacts
 
-    - name: Rename artifacts for release
+    - name: Rename executables only
       run: |
         for file in ./artifacts/*/*; do
-          os_name=$(basename $(dirname "$file"))
-          case "$os_name" in
-            windows-2022) new_name="Documente-Windows.exe" ;;
-            ubuntu-latest) new_name="Documente-Linux.AppImage" ;;
-            *) new_name="$(basename "$file")" ;;
-          esac
-          if [ "$(basename "$file")" != "$new_name" ]; then
-            echo "Renaming $file -> $new_name"
-            mv "$file" "$(dirname "$file")/$new_name"
-          else
-            echo "Skipping rename for $file (already correct name)"
+          if [ -f "$file" ]; then
+            os_name=$(basename $(dirname "$file"))
+            case "$os_name" in
+              windows-2022) [[ "$file" == *.exe ]] && mv "$file" "$(dirname "$file")/Documente-Windows.exe" ;;
+              ubuntu-latest) [[ "$file" == *.AppImage ]] && mv "$file" "$(dirname "$file")/Documente-Linux.AppImage" ;;
+            esac
           fi
         done
 
@@ -100,9 +95,13 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Upload assets
+    - name: Upload release assets (skip directories)
       run: |
         for file in ./artifacts/*/*; do
-          echo "Uploading $file..."
-          gh release upload "${VERSION}" "$file" --clobber
+          if [ -f "$file" ]; then
+            echo "Uploading $file..."
+            gh release upload "${VERSION}" "$file" --clobber
+          else
+            echo "Skipping directory $file"
+          fi
         done
