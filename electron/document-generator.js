@@ -54,17 +54,21 @@ class DocumentGenerator {
                 templatePath = path.join(this.templatesPath, 'model_referat_ucraineni.docx');
                 outputName = `Referat_Ucraineni_${formData.numar_referat}_${new Date().toISOString().split('T')[0]}.docx`;
                 
-                // Format students data
+                // Format students data as table rows
                 const eleviArray = formData.numele_elevilor.split('\n');
                 const cnpArray = formData.cnp_elevi.split('\n');
                 
-                const tabelElevi = eleviArray
-                    .map((nume, i) => {
-                        const cnp = cnpArray[i] || '';
-                        return nume.trim() ? `${i + 1}. ${nume.trim()} - CNP: ${cnp.trim()} - Clasa: ${formData.clasa_elevilor}` : '';
-                    })
-                    .filter(elev => elev)
-                    .join('\n');
+                // Create table rows for each student
+                let tabelElevi = '';
+                for (let i = 0; i < eleviArray.length; i++) {
+                    const nume = eleviArray[i] ? eleviArray[i].trim() : '';
+                    const cnp = cnpArray[i] ? cnpArray[i].trim() : '';
+                    
+                    if (nume) {
+                        // Add table row for each student
+                        tabelElevi += `${i + 1}\t${nume}\t${cnp}\t${formData.clasa_elevilor}\n`;
+                    }
+                }
 
                 // Format members list
                 const membriArray = formData.membrii_comisiei.split('\n');
@@ -152,13 +156,20 @@ class DocumentGenerator {
                 const eleviArray = formData.numele_elevilor.split('\n');
                 const cnpArray = formData.cnp_elevi.split('\n');
                 
-                const tabelElevi = eleviArray
-                    .map((nume, i) => {
-                        const cnp = cnpArray[i] || '';
-                        return nume.trim() ? `${i + 1}. ${nume.trim()} - CNP: ${cnp.trim()} - Clasa: ${formData.clasa_elevilor}` : '';
-                    })
-                    .filter(elev => elev)
-                    .join('\n');
+                // Create table rows for each student with proper tab separation
+                let tabelElevi = '';
+                for (let i = 0; i < eleviArray.length; i++) {
+                    const nume = eleviArray[i] ? eleviArray[i].trim() : '';
+                    const cnp = cnpArray[i] ? cnpArray[i].trim() : '';
+                    
+                    if (nume) {
+                        // Tab-separated format for Word table: Nr. crt. | Nume | CNP | Clasa
+                        tabelElevi += `${i + 1}\t${nume}\t${cnp}\t${formData.clasa_elevilor || ''}\n`;
+                    }
+                }
+                
+                // Remove the last newline
+                tabelElevi = tabelElevi.trim();
 
                 const membriArray = formData.membrii_comisiei.split('\n');
                 const membriList = membriArray
@@ -286,22 +297,56 @@ class DocumentGenerator {
                         margin: 1px;
                     ">${placeholder}</span>`);
                 } else {
-                    // Enhanced blue highlighting for filled content
-                    const valueLines = value.split('\n');
-                    for (let i = 0; i < valueLines.length; i++) {
-                        const line = valueLines[i].trim();
-                        if (line && html.includes(line)) {
-                            const regex = new RegExp(line.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                            html = html.replace(regex, `<span class="filled-content" style="
-                                color: #0066cc; 
-                                font-weight: 500; 
-                                background-color: #eff6ff; 
-                                padding: 2px 4px; 
-                                border-radius: 3px;
-                                border: 1px solid #93c5fd;
-                                display: inline-block;
-                                margin: 1px;
-                            ">${line}</span>`);
+                    // Special handling for table data (student list)
+                    if (placeholder === '[NUMELE_ELEVILOR]' && value.includes('\t')) {
+                        // Convert tab-separated data to HTML table
+                        const tableRows = value.split('\n').filter(row => row.trim());
+                        let tableHtml = `
+                            <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                                <thead>
+                                    <tr style="background-color: #f3f4f6;">
+                                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">Nr. crt.</th>
+                                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">Numele și prenumele</th>
+                                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">CNP</th>
+                                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">Clasa</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+                        
+                        tableRows.forEach(row => {
+                            const [nr, nume, cnp, clasa] = row.split('\t');
+                            tableHtml += `
+                                <tr>
+                                    <td style="border: 1px solid #d1d5db; padding: 8px; color: #0066cc; font-weight: 500;">${nr || ''}</td>
+                                    <td style="border: 1px solid #d1d5db; padding: 8px; color: #0066cc; font-weight: 500;">${nume || ''}</td>
+                                    <td style="border: 1px solid #d1d5db; padding: 8px; color: #0066cc; font-weight: 500;">${cnp || ''}</td>
+                                    <td style="border: 1px solid #d1d5db; padding: 8px; color: #0066cc; font-weight: 500;">${clasa || ''}</td>
+                                </tr>`;
+                        });
+                        
+                        tableHtml += `
+                                </tbody>
+                            </table>`;
+                        
+                        html = html.replace(new RegExp(escapedPlaceholder, 'gi'), tableHtml);
+                    } else {
+                        // Enhanced blue highlighting for filled content
+                        const valueLines = value.split('\n');
+                        for (let i = 0; i < valueLines.length; i++) {
+                            const line = valueLines[i].trim();
+                            if (line && html.includes(line)) {
+                                const regex = new RegExp(line.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                                html = html.replace(regex, `<span class="filled-content" style="
+                                    color: #0066cc; 
+                                    font-weight: 500; 
+                                    background-color: #eff6ff; 
+                                    padding: 2px 4px; 
+                                    border-radius: 3px;
+                                    border: 1px solid #93c5fd;
+                                    display: inline-block;
+                                    margin: 1px;
+                                ">${line}</span>`);
+                            }
                         }
                     }
                 }
