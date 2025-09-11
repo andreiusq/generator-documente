@@ -40,13 +40,13 @@ jobs:
 
     - name: Build Windows
       if: matrix.os == 'windows-2022'
-      run: npm run dist-win
+      run: npm run dist-win -- --publish=never
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build Linux
       if: matrix.os == 'ubuntu-latest'
-      run: npm run dist-linux
+      run: npm run dist-linux -- --publish=never
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -56,7 +56,7 @@ jobs:
         name: release-${{ matrix.os }}
         path: dist/*
 
-  create-release:
+  publish:
     needs: release
     runs-on: ubuntu-latest
     if: |
@@ -67,6 +67,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
     - name: Set release version
       run: echo "VERSION=${{ github.event.inputs.version || github.ref_name }}" >> $GITHUB_ENV
 
@@ -75,8 +84,12 @@ jobs:
       with:
         path: ./artifacts
 
-    - name: Rename and prepare executables
+    - name: Prepare executables for release
       run: |
+        # Find the actual files produced by electron-builder
+        echo "Looking for executable files..."
+        find ./artifacts -name "*.exe" -o -name "*.AppImage" | head -10
+        
         for file in ./artifacts/*/*; do
           if [ -f "$file" ]; then
             os_name=$(basename $(dirname "$file"))
@@ -86,49 +99,36 @@ jobs:
             case "$os_name" in
               windows-2022)
                 if [[ "$file" == *.exe ]]; then
+                  echo "Found Windows executable: $filename"
                   # Create user-friendly name
                   cp "$file" "$dir/Documente-Windows.exe"
-                  # Create electron-updater compatible name
-                  mv "$file" "$dir/generator-documente-minoritati-${VERSION#v}.exe"
                 fi
                 ;;
               ubuntu-latest)
                 if [[ "$file" == *.AppImage ]]; then
+                  echo "Found Linux AppImage: $filename"
                   # Create user-friendly name  
                   cp "$file" "$dir/Documente-Linux.AppImage"
-                  # Create electron-updater compatible name
-                  mv "$file" "$dir/generator-documente-minoritati-${VERSION#v}.AppImage"
                 fi
                 ;;
             esac
           fi
         done
 
-    - name: Generate update metadata
+    - name: Generate update metadata files
       run: |
-        # Create latest.yml for electron-updater (Windows)
-        cat > ./artifacts/latest.yml << EOF
-        version: ${VERSION#v}
-        files:
-          - url: generator-documente-minoritati-${VERSION#v}.exe
-            sha512: $(sha512sum ./artifacts/*/generator-documente-minoritati-${VERSION#v}.exe 2>/dev/null | cut -d' ' -f1 || echo "")
-            size: $(stat -c%s ./artifacts/*/generator-documente-minoritati-${VERSION#v}.exe 2>/dev/null || echo "0")
-        path: generator-documente-minoritati-${VERSION#v}.exe
-        sha512: $(sha512sum ./artifacts/*/generator-documente-minoritati-${VERSION#v}.exe 2>/dev/null | cut -d' ' -f1 || echo "")
-        releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
-        EOF
+        # Use electron-builder to generate proper update metadata
+        echo "Generating update metadata..."
         
-        # Create latest-linux.yml for electron-updater (Linux)
-        cat > ./artifacts/latest-linux.yml << EOF
-        version: ${VERSION#v}
-        files:
-          - url: generator-documente-minoritati-${VERSION#v}.AppImage
-            sha512: $(sha512sum ./artifacts/*/generator-documente-minoritati-${VERSION#v}.AppImage 2>/dev/null | cut -d' ' -f1 || echo "")
-            size: $(stat -c%s ./artifacts/*/generator-documente-minoritati-${VERSION#v}.AppImage 2>/dev/null || echo "0")
-        path: generator-documente-minoritati-${VERSION#v}.AppImage
-        sha512: $(sha512sum ./artifacts/*/generator-documente-minoritati-${VERSION#v}.AppImage 2>/dev/null | cut -d' ' -f1 || echo "")
-        releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
-        EOF
+        # Copy built files to dist directory for electron-builder
+        mkdir -p dist
+        cp -r ./artifacts/*/* dist/ 2>/dev/null || true
+        
+        # Generate update info using electron-builder
+        npx electron-builder --publish=never --config.directories.output=dist --config.generateUpdatesFilesForAllChannels=true
+        
+        echo "Generated files:"
+        find dist -name "*.yml" | head -5
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
@@ -147,13 +147,14 @@ jobs:
           - **Linux**: Download `Documente-Linux.AppImage`
           
           **For auto-updater (technical files):**
-          - Windows: `generator-documente-minoritati-1.0.6.exe`
-          - Linux: `generator-documente-minoritati-1.0.6.AppImage`
-          - Metadata: `latest.yml`, `latest-linux.yml`
+          - Windows installer: `Generator.Documente.Minoritati.Setup.*.exe`
+          - Linux AppImage: `Generator Documente Minoritati-*.AppImage` 
+          - Update metadata: `latest*.yml` files
           
           ### ✨ Features
           - Generate decision documents
-          - Generate minority reports
+          - Generate minority reports  
+          - Advanced custom templates with field configuration
           - Document preview functionality
           - Professional document formatting
           
@@ -162,25 +163,15 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Upload release assets (skip directories)
+    - name: Upload release assets
       run: |
-        # Upload metadata files first
-        if [ -f "./artifacts/latest.yml" ]; then
-          echo "Uploading latest.yml..."
-          gh release upload "${VERSION}" "./artifacts/latest.yml" --clobber
-        fi
-        
-        if [ -f "./artifacts/latest-linux.yml" ]; then
-          echo "Uploading latest-linux.yml..."
-          gh release upload "${VERSION}" "./artifacts/latest-linux.yml" --clobber
-        fi
-        
-        # Upload executable files
-        for file in ./artifacts/*/*; do
-          if [ -f "$file" ]; then
-            echo "Uploading $file..."
-            gh release upload "${VERSION}" "$file" --clobber
-          else
-            echo "Skipping directory $file"
+        # Upload files from both artifacts and dist directories
+        for dir in ./artifacts ./dist; do
+          if [ -d "$dir" ]; then
+            for file in $(find "$dir" -type f); do
+              filename=$(basename "$file")
+              echo "Uploading $filename..."
+              gh release upload "${VERSION}" "$file" --clobber || echo "Failed to upload $filename"
+            done
           fi
         done

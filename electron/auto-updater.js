@@ -11,14 +11,7 @@ class AutoUpdater {
         // Set update configuration
         autoUpdater.autoDownload = false; // Don't auto-download, ask user first
         
-        // Configure GitHub provider settings
-        autoUpdater.setFeedURL({
-            provider: 'github',
-            owner: 'andreiusq',
-            repo: 'generator-documente',
-            private: false,
-            releaseType: 'release' // Use releases, not pre-releases
-        });
+        // electron-updater will use the publish config from package.json automatically
         
         this.setupEventHandlers();
     }
