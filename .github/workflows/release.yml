@@ -111,4 +111,4 @@ jobs:
     - name: Upload release assets
       run: |
         # Find and upload only installer files and update metadata
-        find ./artifacts -type f \( -name "*-Setup-*.exe" -o -name "*-*.AppImage" -o -name "latest*.yml" \) -exec gh release upload "${VERSION}" {} --clobber \;
+        find ./artifacts -type f \( -name "generator-documente-minoritati-*.exe" -o -name "generator-documente-minoritati-*.AppImage" -o -name "latest*.yml" \) -exec gh release upload "${VERSION}" {} --clobber \;
