@@ -91,7 +91,24 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ env.VERSION }}
-        name: Release ${{ env.VERSION }}
+        name: "🏛️ Generator Documente Minoritati ${{ env.VERSION }}"
+        body: |
+          ## 🎯 Generator Documente Minoritati ${{ env.VERSION }}
+          
+          📋 Desktop application for generating minority documents
+          
+          ### 📦 Downloads
+          - **Windows**: Download `Documente-Windows.exe`
+          - **Linux**: Download `Documente-Linux.AppImage`
+          
+          ### ✨ Features
+          - Generate decision documents
+          - Generate minority reports
+          - Document preview functionality
+          - Professional document formatting
+          
+          ---
+          🛠️ Built with Electron and Node.js
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

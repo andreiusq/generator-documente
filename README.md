@@ -1,127 +1,217 @@
-# Generator Documente Minoritați - Electron App Setup
+<div align="center">
+  <img src="electron/assets/icon.png" alt="PRPE Logo" width="120" height="120">
+  
+  # 🏛️ Generator Documente Minorități
+  
+  ### Desktop application pentru generarea documentelor oficiale pentru minorități naționale
+  
+  ![Version](https://img.shields.io/badge/version-1.0.5-brightgreen.svg)
+  ![License](https://img.shields.io/badge/license-MIT-blue.svg)
+  ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)
+  ![Node](https://img.shields.io/badge/node-%3E%3D%2018.0.0-green.svg)
+  
+  **[📥 Download Latest Release](../../releases/latest)** • **[📖 Documentation](#-documentation)** • **[🐛 Report Issues](../../issues)**
+  
+</div>
 
-## Cerințe sistem
-- Node.js 18+ 
-- npm sau yarn
-- Windows 10/11, macOS, sau Linux
+---
 
-## Instalare și rulare
+## 🎯 Overview
 
-### 1. Instalează dependențele
+**Generator Documente Minorități** este o aplicație desktop profesională dezvoltată pentru instituțiile de învățământ din România, facilitând generarea rapidă și precisă a documentelor oficiale pentru elevii din minoritățile naționale.
+
+### ✨ Key Features
+
+- **🖥️ Standalone Desktop App** - Nu necesită browser web sau conexiune la internet
+- **📋 Document Templates** - Template-uri oficiale pentru Decizii și Referate
+- **👁️ Live Preview** - Vizualizare în timp real a documentelor pe măsură ce completezi
+- **💾 Auto-Save** - Salvare automată cu nume de fișiere cu timestamp
+- **🎨 Professional Formatting** - Păstrează formatarea oficială Word (.docx)
+- **🔧 Cross-Platform** - Funcționează pe Windows, macOS și Linux
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Node.js** 18+ ([Download here](https://nodejs.org/))
+- **Operating System**: Windows 10/11, macOS 10.14+, or Linux
+
+### Installation
+
 ```bash
+# Clone the repository
+git clone https://github.com/andreiusq/generator-documente.git
+cd generator-documente
+
+# Install dependencies
 npm install
-```
 
-### 2. Rulează aplicația în modul dezvoltare
-```bash
+# Start the application
 npm start
 ```
 
-### 3. Construiește aplicația pentru distribuție
+### 📦 Build for Distribution
 
-**Pentru Windows:**
 ```bash
+# Windows
 npm run dist-win
-```
 
-**Pentru macOS:**
-```bash
+# macOS  
 npm run dist-mac
-```
 
-**Pentru Linux:**
-```bash
+# Linux
 npm run dist-linux
 ```
 
-## Structura proiectului
+## 📋 Supported Document Types
+
+### 🏛️ Decizie (Decision Document)
+Template pentru aprobarea studiului în limba minorității naționale
+
+**Required Fields:**
+- Numărul deciziei
+- Data deciziei  
+- Numărul referatului de aprobare
+- Inspector General
+- Președinte comisie
+- Membri comisiei
+- Consilier juridic
+
+### 📄 Referat (Report Document)  
+Template pentru referatul privind învățământul în limba minorității
+
+**Required Fields:**
+- Numărul referatului
+- Numele elevilor (listă)
+- CNP-urile elevilor
+- Clasa elevilor
+- Unitatea de învățământ
+- Membri comisiei
+
+## 🗂️ Project Structure
 
 ```
 minoritati-generare/
-├── electron/
-│   ├── main.js              # Procesul principal Electron
-│   ├── document-generator.js # Generator documente JS
-│   └── assets/              # Iconuri aplicație
-├── templates/               # Template-uri Word (.docx)
-├── generated/              # Documente generate
-├── index.html              # Pagina principală
-├── form-decizie.html       # Formular decizie
-├── form-referat.html       # Formular referat
-└── package.json           # Configurație npm
+├── 📁 electron/
+│   ├── main.js                    # Electron main process
+│   ├── document-generator.js      # Document generation logic
+│   └── assets/
+│       └── icon.png              # Application icon
+├── 📁 templates/                  # Word document templates
+│   ├── Model decizie.docx
+│   └── model_referat_ucraineni.docx
+├── 📁 generated/                  # Generated documents output
+├── 📁 tests/                      # Test suite
+├── index.html                     # Main application window
+├── form-decizie.html             # Decision form
+├── form-referat.html             # Report form
+└── package.json                   # Dependencies & scripts
 ```
 
-## Funcționalități
+## 🛠️ Development
 
-### ✅ **Aplicație desktop standalone**
-- Nu necesită browser web
-- Interfață nativă pentru Windows/Mac/Linux
-- Funcționează offline
+### Running Tests
 
-### ✅ **Preview în timp real**
-- Vizualizează documentul pe măsură ce completezi
-- Câmpuri goale în roșu, completate în albastru
-- Layout autentic Word
+```bash
+# Run all tests
+npm test
 
-### ✅ **Generare documente**
-- Folosește template-urile reale .docx
-- Păstrează formatarea originală
-- Generează .docx compatibile cu Word
+# Run tests with coverage
+npm run test:coverage
 
-### ✅ **Gestionare fișiere**
-- Salvare automată în directorul `generated/`
-- Deschidere directă în Word după generare
-- Nume fișiere cu timestamp
+# Run tests in watch mode
+npm run test:watch
+```
 
-## Template-uri necesare
+### Available Scripts
 
-Asigură-te că ai template-urile în directorul `templates/`:
-- `Model decizie.docx` - cu placeholder-uri ca `[NUMAR_DECIZIE]`
-- `model_referat_ucraineni.docx` - cu placeholder-uri ca `[NUMAR_REFERAT]`
+| Command | Description |
+|---------|-------------|
+| `npm start` | Start development server |
+| `npm test` | Run test suite |
+| `npm run build` | Build application |
+| `npm run dist` | Create distribution package |
+| `npm run electron` | Start Electron app |
 
-## Placeholder-uri suportate
+## 📖 Documentation
 
-### Model Decizie:
-- `[NUMAR_DECIZIE]`
-- `[DATA_DECIZIE]` 
-- `[NUMAR_REFERAT_APROBARE]`
-- `[DATA_REFERAT_APROBARE]`
-- `[INSPECTOR_GENERAL]`
-- `[PRESEDINTE_COMISIE]`
-- `[MEMBRI_COMISIEI]`
-- `[CONSILIER_JURIDIC]`
-- `[INTOCMIT_DE]`
+### Template Placeholders
 
-### Model Referat:
-- `[NUMAR_REFERAT]`
-- `[DATA_REFERAT]`
-- `[NUMELE_ELEVILOR]`
-- `[CLASA_ELEVILOR]`
-- `[UNITATEA_INVATAMANT]`
-- `[MEMBRI_COMISIEI]`
-- `[APROBAT_DE]`
-- `[INTOCMIT_DE]`
+#### Decizie Template Placeholders:
+- `[NUMAR_DECIZIE]` - Decision number
+- `[DATA_DECIZIE]` - Decision date
+- `[NUMAR_REFERAT_APROBARE]` - Approval report number
+- `[DATA_REFERAT_APROBARE]` - Approval report date
+- `[INSPECTOR_GENERAL]` - General inspector name
+- `[PRESEDINTE_COMISIE]` - Commission president
+- `[MEMBRI_COMISIEI]` - Commission members (numbered list)
+- `[CONSILIER_JURIDIC]` - Legal advisor
+- `[INTOCMIT_DE]` - Prepared by
 
-## Probleme comune
+#### Referat Template Placeholders:
+- `[NUMAR_REFERAT]` - Report number
+- `[DATA_REFERAT]` - Report date
+- `[NUMELE_ELEVILOR]` - Students names (as table)
+- `[CLASA_ELEVILOR]` - Students class
+- `[UNITATEA_INVATAMANT]` - Educational institution
+- `[MEMBRI_COMISIEI]` - Commission members (numbered list)
+- `[APROBAT_DE]` - Approved by
+- `[INTOCMIT_DE]` - Prepared by
 
-### Aplicația nu pornește
-- Verifică că Node.js este instalat: `node --version`
-- Reinstalează dependențele: `rm -rf node_modules && npm install`
+### Configuration
 
-### Template-uri nu se încarcă
-- Verifică că fișierele .docx sunt în `templates/`
-- Asigură-te că au placeholder-urile corecte
+Templates should be placed in the `templates/` directory:
+- `Model decizie.docx` - Decision template with placeholders
+- `model_referat_ucraineni.docx` - Report template with placeholders
 
-### Documentele nu se generează
-- Verifică permisiunile pe directorul `generated/`
-- Asigură-te că template-urile nu sunt corupte
+## 🔧 Troubleshooting
 
-## Dezvoltare
+### Common Issues
 
-Pentru dezvoltatori care vor să modifice aplicația:
+**Application won't start:**
+```bash
+# Check Node.js version
+node --version
 
-1. **Modifică interfața**: Editează `index.html`, `form-decizie.html`, `form-referat.html`
-2. **Modifică logica**: Editează `electron/document-generator.js`
-3. **Testează**: `npm start`
-4. **Construiește**: `npm run dist-win` (sau dist-mac/dist-linux)
+# Reinstall dependencies
+rm -rf node_modules
+npm install
+```
 
-## Powered by Starquess România
+**Templates not loading:**
+- Ensure `.docx` files are in the `templates/` directory
+- Check that templates contain correct placeholders
+- Verify file permissions
+
+**Documents not generating:**
+- Check write permissions on `generated/` directory
+- Ensure templates are not corrupted
+- Verify all required fields are filled
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👥 Authors & Contributors
+
+- **[Starquess România](https://starquess.ro)** - *Initial work*
+- **[andreiusq](https://github.com/andreiusq)** - *Lead Developer*
+
+## 🙏 Acknowledgments
+
+- Dezvoltat pentru instituțiile de învățământ din România
+- Suport pentru minoritățile naționale în educație
+- Built with ❤️ using Electron and Node.js
+
+---
+
+<div align="center">
+  <strong>🏛️ Generator Documente Minorități - Profesionalism în educația pentru minorități naționale</strong>
+</div>

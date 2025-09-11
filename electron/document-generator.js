@@ -29,7 +29,7 @@ class DocumentGenerator {
 
             if (templateType === 'decizie') {
                 templatePath = path.join(this.templatesPath, 'Model decizie.docx');
-                outputName = `Decizie_${formData.numar_decizie}_${new Date().toISOString().split('T')[0]}.docx`;
+                outputName = `Decizie_${formData.numar_decizie.replace(/\//g, '')}_${new Date().toISOString().split('T')[0]}.docx`;
                 
                 // Format members list
                 const membriArray = formData.membrii_comisiei.split('\n');
@@ -52,7 +52,7 @@ class DocumentGenerator {
 
             } else if (templateType === 'referat') {
                 templatePath = path.join(this.templatesPath, 'model_referat_ucraineni.docx');
-                outputName = `Referat_Ucraineni_${formData.numar_referat}_${new Date().toISOString().split('T')[0]}.docx`;
+                outputName = `Referat_Ucraineni_${formData.numar_referat.replace(/\//g, '')}_${new Date().toISOString().split('T')[0]}.docx`;
                 
                 // Format students data as table rows
                 const eleviArray = formData.numele_elevilor.split('\n');
