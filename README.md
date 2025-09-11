@@ -24,7 +24,9 @@
 
 - **🖥️ Standalone Desktop App** - Nu necesită browser web sau conexiune la internet
 - **📋 Document Templates** - Template-uri oficiale pentru Decizii și Referate
+- **🎨 Custom Templates** - Încarcă propriile tale template-uri Word cu placeholder-uri personalizate
 - **👁️ Live Preview** - Vizualizare în timp real a documentelor pe măsură ce completezi
+- **🤖 Auto Placeholder Detection** - Detectează automat placeholder-urile din template-urile încărcate
 - **💾 Auto-Save** - Salvare automată cu nume de fișiere cu timestamp
 - **🎨 Professional Formatting** - Păstrează formatarea oficială Word (.docx)
 - **🔧 Cross-Platform** - Funcționează pe Windows, macOS și Linux
@@ -87,6 +89,23 @@ Template pentru referatul privind învățământul în limba minorității
 - Unitatea de învățământ
 - Membri comisiei
 
+### 🎨 Custom Templates
+Încarcă propriile tale template-uri Word (.docx) cu placeholder-uri personalizate
+
+**Features:**
+- **Auto-detection**: Detectează automat placeholder-urile în format `[NUME_PLACEHOLDER]`
+- **Dynamic Forms**: Generează formulare automat bazate pe placeholder-uri
+- **Live Preview**: Preview în timp real pentru template-urile custom
+- **Template Management**: Gestionează, redenumește și șterge template-urile
+
+**How to create custom templates:**
+1. Creează documentul în Word
+2. Folosește placeholder-uri în format `[NUME_PLACEHOLDER]`
+3. Încarcă template-ul în aplicație
+4. Aplicația detectează automat placeholder-urile și creează formularul
+
+📖 **[Vezi ghidul complet pentru template-uri custom →](CUSTOM-TEMPLATES.md)**
+
 ## 🗂️ Project Structure
 
 ```
@@ -96,14 +115,19 @@ minoritati-generare/
 │   ├── document-generator.js      # Document generation logic
 │   └── assets/
 │       └── icon.png              # Application icon
-├── 📁 templates/                  # Word document templates
+├── 📁 templates/                  # Default Word document templates
 │   ├── Model decizie.docx
 │   └── model_referat_ucraineni.docx
+├── 📁 custom-templates/           # User uploaded templates (auto-created)
+│   └── templates.json            # Template metadata
 ├── 📁 generated/                  # Generated documents output
 ├── 📁 tests/                      # Test suite
 ├── index.html                     # Main application window
 ├── form-decizie.html             # Decision form
 ├── form-referat.html             # Report form
+├── form-custom.html              # Dynamic custom template form
+├── template-manager.html         # Custom template management
+├── CUSTOM-TEMPLATES.md           # Custom templates guide
 └── package.json                   # Dependencies & scripts
 ```
 

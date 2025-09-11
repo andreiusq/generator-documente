@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionare Template-uri - Generator Documente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Gestionare Template-uri</h1>
+                    <p class="text-gray-600">Încarcă și gestionează template-urile tale personalizate</p>
+                </div>
+                <button onclick="goHome()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors">
+                    ← Înapoi
+                </button>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Încarcă Template Nou</h2>
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                    </div>
+                    <p class="text-gray-600 mb-4">Selectează un fișier .docx pentru a încărca un template nou</p>
+                    <input type="file" id="templateFile" accept=".docx" class="hidden" onchange="handleFileUpload(event)">
+                    <button onclick="document.getElementById('templateFile').click()" class="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 transition-colors">
+                        Selectează Fișier
+                    </button>
+                    <p class="text-sm text-gray-500 mt-2">Fișierul trebuie să fie în format .docx cu placeholder-uri în format [NUME_PLACEHOLDER]</p>
+                </div>
+            </div>
+
+            <!-- Template List -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Template-uri Disponibile</h2>
+                <div id="templateList" class="space-y-4">
+                    <!-- Templates will be loaded here -->
+                    <div class="text-center py-8 text-gray-500">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p>Nu ai încă template-uri personalizate</p>
+                        <p class="text-sm">Încarcă primul tău template pentru a începe</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template Upload Modal -->
+    <div id="uploadModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Configurează Template-ul</h3>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nume Template</label>
+                    <input type="text" id="templateName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="ex: Cerere concediu">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Placeholder-uri detectate:</label>
+                    <div id="detectedPlaceholders" class="max-h-40 overflow-y-auto bg-gray-50 p-3 rounded border text-left">
+                        <!-- Placeholders will be listed here -->
+                    </div>
+                </div>
+                <div class="flex justify-center space-x-3">
+                    <button onclick="cancelUpload()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors">
+                        Anulează
+                    </button>
+                    <button onclick="confirmUpload()" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors">
+                        Salvează Template
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        let currentFile = null;
+        let currentPlaceholders = [];
+
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.name.endsWith('.docx')) {
+                alert('Te rog selectează un fișier .docx valid');
+                return;
+            }
+
+            currentFile = file;
+            
+            // Show loading
+            const modal = document.getElementById('uploadModal');
+            const placeholdersDiv = document.getElementById('detectedPlaceholders');
+            placeholdersDiv.innerHTML = '<div class="text-center"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div><p class="mt-2">Analizez template-ul...</p></div>';
+            
+            modal.classList.remove('hidden');
+
+            try {
+                // Read file and detect placeholders
+                const arrayBuffer = await file.arrayBuffer();
+                const placeholders = await ipcRenderer.invoke('detect-placeholders', arrayBuffer);
+                
+                currentPlaceholders = placeholders;
+                displayPlaceholders(placeholders);
+                
+                // Pre-fill template name
+                document.getElementById('templateName').value = file.name.replace('.docx', '');
+                
+            } catch (error) {
+                console.error('Error analyzing template:', error);
+                placeholdersDiv.innerHTML = '<div class="text-red-600">Eroare la analizarea template-ului. Te rog încearcă din nou.</div>';
+            }
+        }
+
+        function displayPlaceholders(placeholders) {
+            const placeholdersDiv = document.getElementById('detectedPlaceholders');
+            
+            if (placeholders.length === 0) {
+                placeholdersDiv.innerHTML = '<div class="text-yellow-600">Nu s-au găsit placeholder-uri în format [NUME]. Asigură-te că template-ul conține placeholder-uri în format [NUME_PLACEHOLDER].</div>';
+                return;
+            }
+
+            const placeholderList = placeholders.map(p => 
+                `<div class="flex justify-between items-center py-1">
+                    <span class="font-mono text-sm bg-gray-200 px-2 py-1 rounded">${p}</span>
+                    <span class="text-xs text-gray-500">câmp obligatoriu</span>
+                </div>`
+            ).join('');
+            
+            placeholdersDiv.innerHTML = `<div class="space-y-1">${placeholderList}</div>`;
+        }
+
+        async function confirmUpload() {
+            const templateName = document.getElementById('templateName').value.trim();
+            
+            if (!templateName) {
+                alert('Te rog introdu un nume pentru template');
+                return;
+            }
+
+            if (!currentFile) {
+                alert('Eroare: Fișierul nu a fost găsit');
+                return;
+            }
+
+            try {
+                const arrayBuffer = await currentFile.arrayBuffer();
+                const result = await ipcRenderer.invoke('save-custom-template', {
+                    name: templateName,
+                    file: arrayBuffer,
+                    originalName: currentFile.name,
+                    placeholders: currentPlaceholders
+                });
+
+                if (result.success) {
+                    alert('Template-ul a fost salvat cu succes!');
+                    cancelUpload();
+                    loadTemplates();
+                } else {
+                    alert('Eroare la salvarea template-ului: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error saving template:', error);
+                alert('Eroare la salvarea template-ului');
+            }
+        }
+
+        function cancelUpload() {
+            document.getElementById('uploadModal').classList.add('hidden');
+            document.getElementById('templateFile').value = '';
+            document.getElementById('templateName').value = '';
+            currentFile = null;
+            currentPlaceholders = [];
+        }
+
+        async function loadTemplates() {
+            try {
+                const templates = await ipcRenderer.invoke('get-custom-templates');
+                displayTemplates(templates);
+            } catch (error) {
+                console.error('Error loading templates:', error);
+            }
+        }
+
+        function displayTemplates(templates) {
+            const templateList = document.getElementById('templateList');
+            
+            if (templates.length === 0) {
+                templateList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p>Nu ai încă template-uri personalizate</p>
+                        <p class="text-sm">Încarcă primul tău template pentru a începe</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const templateCards = templates.map(template => `
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">${template.name}</h3>
+                            <p class="text-sm text-gray-600 mb-2">
+                                <span class="inline-flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                    </svg>
+                                    ${template.placeholders.length} placeholder-uri
+                                </span>
+                            </p>
+                            <div class="text-xs text-gray-500">
+                                ${template.placeholders.slice(0, 3).map(p => `<span class="bg-gray-100 px-2 py-1 rounded mr-1">${p}</span>`).join('')}
+                                ${template.placeholders.length > 3 ? '<span>...</span>' : ''}
+                            </div>
+                        </div>
+                        <div class="flex space-x-2 ml-4">
+                            <button onclick="useTemplate('${template.id}')" class="bg-blue-600 text-white px-3 py-1 text-sm rounded hover:bg-blue-700 transition-colors">
+                                Folosește
+                            </button>
+                            <button onclick="deleteTemplate('${template.id}')" class="bg-red-600 text-white px-3 py-1 text-sm rounded hover:bg-red-700 transition-colors">
+                                Șterge
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            templateList.innerHTML = templateCards;
+        }
+
+        async function useTemplate(templateId) {
+            window.location.href = `form-custom.html?template=${templateId}`;
+        }
+
+        async function deleteTemplate(templateId) {
+            if (!confirm('Ești sigur că vrei să ștergi acest template?')) {
+                return;
+            }
+
+            try {
+                const result = await ipcRenderer.invoke('delete-custom-template', templateId);
+                if (result.success) {
+                    loadTemplates();
+                } else {
+                    alert('Eroare la ștergerea template-ului: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error deleting template:', error);
+                alert('Eroare la ștergerea template-ului');
+            }
+        }
+
+        // Load templates when page loads
+        document.addEventListener('DOMContentLoaded', loadTemplates);
+    </script>
+</body>
+</html>

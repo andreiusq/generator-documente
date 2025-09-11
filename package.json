@@ -51,6 +51,7 @@
     "files": [
       "electron/**/*",
       "templates/**/*",
+      "custom-templates/**/*",
       "generated/**/*",
       "*.php",
       "node_modules/**/*",

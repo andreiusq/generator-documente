@@ -285,3 +285,69 @@ ipcMain.handle('open-file', async (event, filePath) => {
     return { success: false, error: error.message };
   }
 });
+
+// Custom template management IPC handlers
+ipcMain.handle('detect-placeholders', async (event, fileBuffer) => {
+  try {
+    return await documentGenerator.detectPlaceholders(fileBuffer);
+  } catch (error) {
+    console.error('Detect placeholders error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('save-custom-template', async (event, templateData) => {
+  try {
+    return documentGenerator.saveCustomTemplate(templateData);
+  } catch (error) {
+    console.error('Save custom template error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-custom-templates', async (event) => {
+  try {
+    return documentGenerator.getCustomTemplates();
+  } catch (error) {
+    console.error('Get custom templates error:', error);
+    return [];
+  }
+});
+
+ipcMain.handle('delete-custom-template', async (event, templateId) => {
+  try {
+    return documentGenerator.deleteCustomTemplate(templateId);
+  } catch (error) {
+    console.error('Delete custom template error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('generate-custom-document', async (event, templateId, formData) => {
+  try {
+    return await documentGenerator.generateCustomDocument(templateId, formData);
+  } catch (error) {
+    console.error('Generate custom document error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-custom-template', async (event, templateId) => {
+  try {
+    const templates = documentGenerator.getCustomTemplates();
+    const template = templates.find(t => t.id === templateId);
+    return template || null;
+  } catch (error) {
+    console.error('Get custom template error:', error);
+    return null;
+  }
+});
+
+ipcMain.handle('generate-custom-preview', async (event, templateId, formData) => {
+  try {
+    return await documentGenerator.getCustomPreview(templateId, formData);
+  } catch (error) {
+    console.error('Generate custom preview error:', error);
+    return { success: false, error: error.message };
+  }
+});

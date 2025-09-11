@@ -573,6 +573,220 @@ class DocumentGenerator {
         return modifiedXml;
     }
 
+    // Custom template management methods
+    async detectPlaceholders(fileBuffer) {
+        try {
+            const zip = await JSZip.loadAsync(fileBuffer);
+            let placeholders = new Set();
+
+            // Check main document
+            const documentXml = await zip.file('word/document.xml')?.async('text');
+            if (documentXml) {
+                const matches = documentXml.match(/\[([A-Z_][A-Z0-9_]*)\]/g);
+                if (matches) {
+                    matches.forEach(match => placeholders.add(match));
+                }
+            }
+
+            // Check header files
+            const headerFiles = Object.keys(zip.files).filter(filename => 
+                filename.startsWith('word/header') && filename.endsWith('.xml')
+            );
+            for (const headerFile of headerFiles) {
+                const headerXml = await zip.file(headerFile)?.async('text');
+                if (headerXml) {
+                    const matches = headerXml.match(/\[([A-Z_][A-Z0-9_]*)\]/g);
+                    if (matches) {
+                        matches.forEach(match => placeholders.add(match));
+                    }
+                }
+            }
+
+            // Check footer files  
+            const footerFiles = Object.keys(zip.files).filter(filename => 
+                filename.startsWith('word/footer') && filename.endsWith('.xml')
+            );
+            for (const footerFile of footerFiles) {
+                const footerXml = await zip.file(footerFile)?.async('text');
+                if (footerXml) {
+                    const matches = footerXml.match(/\[([A-Z_][A-Z0-9_]*)\]/g);
+                    if (matches) {
+                        matches.forEach(match => placeholders.add(match));
+                    }
+                }
+            }
+
+            return Array.from(placeholders).sort();
+        } catch (error) {
+            console.error('Error detecting placeholders:', error);
+            throw error;
+        }
+    }
+
+    saveCustomTemplate(templateData) {
+        try {
+            const customTemplatesPath = path.join(__dirname, '../custom-templates');
+            const templatesMetaPath = path.join(customTemplatesPath, 'templates.json');
+            
+            // Ensure custom templates directory exists
+            if (!fs.existsSync(customTemplatesPath)) {
+                fs.mkdirSync(customTemplatesPath, { recursive: true });
+            }
+
+            // Load existing templates metadata
+            let templates = [];
+            if (fs.existsSync(templatesMetaPath)) {
+                templates = JSON.parse(fs.readFileSync(templatesMetaPath, 'utf8'));
+            }
+
+            // Generate unique ID
+            const templateId = Date.now().toString() + '_' + Math.random().toString(36).substring(7);
+            const fileName = `${templateId}.docx`;
+            const filePath = path.join(customTemplatesPath, fileName);
+
+            // Save the template file
+            fs.writeFileSync(filePath, Buffer.from(templateData.file));
+
+            // Add to metadata
+            const newTemplate = {
+                id: templateId,
+                name: templateData.name,
+                fileName: fileName,
+                originalName: templateData.originalName,
+                placeholders: templateData.placeholders,
+                createdAt: new Date().toISOString()
+            };
+
+            templates.push(newTemplate);
+            fs.writeFileSync(templatesMetaPath, JSON.stringify(templates, null, 2));
+
+            return { success: true, template: newTemplate };
+        } catch (error) {
+            console.error('Error saving custom template:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    getCustomTemplates() {
+        try {
+            const templatesMetaPath = path.join(__dirname, '../custom-templates/templates.json');
+            
+            if (!fs.existsSync(templatesMetaPath)) {
+                return [];
+            }
+
+            const templates = JSON.parse(fs.readFileSync(templatesMetaPath, 'utf8'));
+            return templates;
+        } catch (error) {
+            console.error('Error loading custom templates:', error);
+            return [];
+        }
+    }
+
+    deleteCustomTemplate(templateId) {
+        try {
+            const customTemplatesPath = path.join(__dirname, '../custom-templates');
+            const templatesMetaPath = path.join(customTemplatesPath, 'templates.json');
+            
+            if (!fs.existsSync(templatesMetaPath)) {
+                return { success: false, error: 'No templates found' };
+            }
+
+            let templates = JSON.parse(fs.readFileSync(templatesMetaPath, 'utf8'));
+            const templateIndex = templates.findIndex(t => t.id === templateId);
+            
+            if (templateIndex === -1) {
+                return { success: false, error: 'Template not found' };
+            }
+
+            const template = templates[templateIndex];
+            const filePath = path.join(customTemplatesPath, template.fileName);
+
+            // Delete the file
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+
+            // Remove from metadata
+            templates.splice(templateIndex, 1);
+            fs.writeFileSync(templatesMetaPath, JSON.stringify(templates, null, 2));
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting custom template:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async generateCustomDocument(templateId, formData) {
+        try {
+            const templates = this.getCustomTemplates();
+            const template = templates.find(t => t.id === templateId);
+            
+            if (!template) {
+                return { success: false, error: 'Template not found' };
+            }
+
+            const templatePath = path.join(__dirname, '../custom-templates', template.fileName);
+            
+            if (!fs.existsSync(templatePath)) {
+                return { success: false, error: 'Template file not found' };
+            }
+
+            // Create filename with current date
+            const safeName = template.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_');
+            const outputName = `${safeName}_${new Date().toISOString().split('T')[0]}.docx`;
+
+            // Create replacements object from form data
+            const replacements = {};
+            template.placeholders.forEach(placeholder => {
+                const fieldName = placeholder.replace(/[\[\]]/g, '').toLowerCase();
+                replacements[placeholder] = formData[fieldName] || '';
+            });
+
+            const outputPath = await this.processTemplate(templatePath, outputName, replacements);
+            return { 
+                success: true, 
+                filePath: outputPath, 
+                fileName: outputName,
+                templateName: template.name 
+            };
+        } catch (error) {
+            console.error('Error generating custom document:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async getCustomPreview(templateId, formData) {
+        try {
+            const templates = this.getCustomTemplates();
+            const template = templates.find(t => t.id === templateId);
+            
+            if (!template) {
+                return { success: false, error: 'Template not found' };
+            }
+
+            const templatePath = path.join(__dirname, '../custom-templates', template.fileName);
+            
+            if (!fs.existsSync(templatePath)) {
+                return { success: false, error: 'Template file not found' };
+            }
+
+            // Create replacements object from form data
+            const replacements = {};
+            template.placeholders.forEach(placeholder => {
+                const fieldName = placeholder.replace(/[\[\]]/g, '').toLowerCase();
+                replacements[placeholder] = formData[fieldName] || '';
+            });
+
+            const html = await this.convertToPreviewHTML(templatePath, replacements);
+            return { success: true, html: html };
+        } catch (error) {
+            console.error('Error generating custom preview:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
 }
 
 // Make it available globally for the renderer process
