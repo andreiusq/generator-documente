@@ -551,11 +551,7 @@ class DocumentGenerator {
             
         } catch (error) {
             console.error('Error converting DOCX to HTML:', error);
-            return `<div style="color: red; padding: 20px; font-family: Arial, sans-serif;">
-                <h3>Preview Error</h3>
-                <p>Error loading document preview: ${error.message}</p>
-                <p><small>Please check that your template file is a valid DOCX document.</small></p>
-            </div>`;
+            throw error;
         }
     }
     
