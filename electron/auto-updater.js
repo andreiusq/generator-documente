@@ -9,8 +9,16 @@ class AutoUpdater {
         autoUpdater.logger = log;
 
         // Set update configuration
-        autoUpdater.checkForUpdatesAndNotify();
         autoUpdater.autoDownload = false; // Don't auto-download, ask user first
+        
+        // Configure GitHub provider settings
+        autoUpdater.setFeedURL({
+            provider: 'github',
+            owner: 'andreiusq',
+            repo: 'generator-documente',
+            private: false,
+            releaseType: 'release' // Use releases, not pre-releases
+        });
         
         this.setupEventHandlers();
     }
@@ -51,10 +59,10 @@ class AutoUpdater {
     showUpdateAvailableDialog(updateInfo) {
         const dialogOpts = {
             type: 'info',
-            buttons: ['Download Update', 'Later'],
-            title: 'Application Update Available',
-            message: `A new version (${updateInfo.version}) is available!`,
-            detail: `Current version: ${require('../package.json').version}\nNew version: ${updateInfo.version}\n\nWould you like to download the update now?`
+            buttons: ['Descarcă actualizare', 'Mai târziu'],
+            title: 'Aplicația necesită actualizare',
+            message: `Versiunea (${updateInfo.version}) este disponibilă!`,
+            detail: `Versiunea curentă: ${require('../package.json').version}\nVersiune nouă: ${updateInfo.version}\n\nDorești să descarci versiunea nouă acum?`
         };
 
         dialog.showMessageBox(null, dialogOpts).then((returnValue) => {
@@ -69,10 +77,10 @@ class AutoUpdater {
     showUpdateDownloadedDialog(updateInfo) {
         const dialogOpts = {
             type: 'info',
-            buttons: ['Restart Now', 'Restart Later'],
-            title: 'Update Downloaded',
-            message: `Update version ${updateInfo.version} has been downloaded.`,
-            detail: 'The application will restart to apply the update.'
+            buttons: ['Restart acum', 'Restart mai târziu'],
+            title: 'Actualizare descărcată',
+            message: `Actualizarea ${updateInfo.version} a fost descărcată.`,
+            detail: 'Aplicația are nevoie de un restart.'
         };
 
         dialog.showMessageBox(null, dialogOpts).then((returnValue) => {
@@ -84,32 +92,66 @@ class AutoUpdater {
     }
 
     showUpdateErrorDialog(error) {
-        const dialogOpts = {
-            type: 'error',
-            buttons: ['OK'],
-            title: 'Update Error',
-            message: 'There was an error while checking for updates.',
-            detail: error ? error.toString() : 'Unknown error occurred'
-        };
-
-        dialog.showMessageBox(null, dialogOpts);
+        const isNetworkError = error && (
+            error.toString().includes('404') || 
+            error.toString().includes('ENOTFOUND') ||
+            error.toString().includes('net::ERR')
+        );
+        
+        let dialogOpts;
+        
+        if (isNetworkError) {
+            dialogOpts = {
+                type: 'warning',
+                buttons: ['Deschide GitHub Releases', 'OK'],
+                title: 'Actualizare disponibilă',
+                message: 'Nu s-a putut descărca actualizarea automat.',
+                detail: `Poți descărca manual ultima versiune de pe GitHub.\n\nEroare: ${error ? error.toString() : 'Eroare de rețea'}`
+            };
+            
+            dialog.showMessageBox(null, dialogOpts).then((returnValue) => {
+                if (returnValue.response === 0) {
+                    // Open GitHub releases page
+                    require('electron').shell.openExternal('https://github.com/andreiusq/generator-documente/releases/latest');
+                }
+            });
+        } else {
+            dialogOpts = {
+                type: 'error',
+                buttons: ['OK'],
+                title: 'Eroare actualizare',
+                message: 'S-a întâmplat o eroare la verificarea actualizărilor.',
+                detail: error ? error.toString() : 'Eroare necunoscută'
+            };
+            
+            dialog.showMessageBox(null, dialogOpts);
+        }
     }
 
     showDownloadInProgressDialog() {
         const dialogOpts = {
             type: 'info',
             buttons: ['OK'],
-            title: 'Downloading Update',
-            message: 'Update is being downloaded in the background.',
-            detail: 'You will be notified when the download is complete.'
+            title: 'Descărcare actualizare',
+            message: 'Actualizarea se descarcă.',
+            detail: 'Vei fi notificat când descărcarea s-a finalizat.'
         };
 
         dialog.showMessageBox(null, dialogOpts);
     }
 
     // Manual check for updates
-    checkForUpdates() {
-        autoUpdater.checkForUpdatesAndNotify();
+    async checkForUpdates() {
+        try {
+            log.info('Checking for updates manually...');
+            log.info('Current version:', this.getCurrentVersion());
+            log.info('Update feed URL:', 'https://github.com/andreiusq/generator-documente');
+            
+            await autoUpdater.checkForUpdatesAndNotify();
+        } catch (error) {
+            log.error('Manual update check failed:', error);
+            this.showUpdateErrorDialog(error);
+        }
     }
 
     // Check for updates when app starts (with delay)

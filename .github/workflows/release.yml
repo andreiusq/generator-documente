@@ -75,17 +75,60 @@ jobs:
       with:
         path: ./artifacts
 
-    - name: Rename executables only
+    - name: Rename and prepare executables
       run: |
         for file in ./artifacts/*/*; do
           if [ -f "$file" ]; then
             os_name=$(basename $(dirname "$file"))
+            filename=$(basename "$file")
+            dir=$(dirname "$file")
+            
             case "$os_name" in
-              windows-2022) [[ "$file" == *.exe ]] && mv "$file" "$(dirname "$file")/Documente-Windows.exe" ;;
-              ubuntu-latest) [[ "$file" == *.AppImage ]] && mv "$file" "$(dirname "$file")/Documente-Linux.AppImage" ;;
+              windows-2022)
+                if [[ "$file" == *.exe ]]; then
+                  # Create user-friendly name
+                  cp "$file" "$dir/Documente-Windows.exe"
+                  # Create electron-updater compatible name
+                  mv "$file" "$dir/generator-documente-minoritati-${VERSION#v}.exe"
+                fi
+                ;;
+              ubuntu-latest)
+                if [[ "$file" == *.AppImage ]]; then
+                  # Create user-friendly name  
+                  cp "$file" "$dir/Documente-Linux.AppImage"
+                  # Create electron-updater compatible name
+                  mv "$file" "$dir/generator-documente-minoritati-${VERSION#v}.AppImage"
+                fi
+                ;;
             esac
           fi
         done
+
+    - name: Generate update metadata
+      run: |
+        # Create latest.yml for electron-updater (Windows)
+        cat > ./artifacts/latest.yml << EOF
+        version: ${VERSION#v}
+        files:
+          - url: generator-documente-minoritati-${VERSION#v}.exe
+            sha512: $(sha512sum ./artifacts/*/generator-documente-minoritati-${VERSION#v}.exe 2>/dev/null | cut -d' ' -f1 || echo "")
+            size: $(stat -c%s ./artifacts/*/generator-documente-minoritati-${VERSION#v}.exe 2>/dev/null || echo "0")
+        path: generator-documente-minoritati-${VERSION#v}.exe
+        sha512: $(sha512sum ./artifacts/*/generator-documente-minoritati-${VERSION#v}.exe 2>/dev/null | cut -d' ' -f1 || echo "")
+        releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
+        EOF
+        
+        # Create latest-linux.yml for electron-updater (Linux)
+        cat > ./artifacts/latest-linux.yml << EOF
+        version: ${VERSION#v}
+        files:
+          - url: generator-documente-minoritati-${VERSION#v}.AppImage
+            sha512: $(sha512sum ./artifacts/*/generator-documente-minoritati-${VERSION#v}.AppImage 2>/dev/null | cut -d' ' -f1 || echo "")
+            size: $(stat -c%s ./artifacts/*/generator-documente-minoritati-${VERSION#v}.AppImage 2>/dev/null || echo "0")
+        path: generator-documente-minoritati-${VERSION#v}.AppImage
+        sha512: $(sha512sum ./artifacts/*/generator-documente-minoritati-${VERSION#v}.AppImage 2>/dev/null | cut -d' ' -f1 || echo "")
+        releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
+        EOF
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
@@ -98,8 +141,15 @@ jobs:
           📋 Desktop application for generating minority documents
           
           ### 📦 Downloads
+          
+          **For regular users:**
           - **Windows**: Download `Documente-Windows.exe`
           - **Linux**: Download `Documente-Linux.AppImage`
+          
+          **For auto-updater (technical files):**
+          - Windows: `generator-documente-minoritati-1.0.6.exe`
+          - Linux: `generator-documente-minoritati-1.0.6.AppImage`
+          - Metadata: `latest.yml`, `latest-linux.yml`
           
           ### ✨ Features
           - Generate decision documents
@@ -114,6 +164,18 @@ jobs:
 
     - name: Upload release assets (skip directories)
       run: |
+        # Upload metadata files first
+        if [ -f "./artifacts/latest.yml" ]; then
+          echo "Uploading latest.yml..."
+          gh release upload "${VERSION}" "./artifacts/latest.yml" --clobber
+        fi
+        
+        if [ -f "./artifacts/latest-linux.yml" ]; then
+          echo "Uploading latest-linux.yml..."
+          gh release upload "${VERSION}" "./artifacts/latest-linux.yml" --clobber
+        fi
+        
+        # Upload executable files
         for file in ./artifacts/*/*; do
           if [ -f "$file" ]; then
             echo "Uploading $file..."
