@@ -41,6 +41,7 @@
     "directories": {
       "output": "dist"
     },
+    "generateUpdatesFilesForAllChannels": true,
     "publish": [
       {
         "provider": "github",
