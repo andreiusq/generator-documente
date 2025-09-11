@@ -185,7 +185,7 @@
                 document.getElementById('pageTitle').textContent = `Formular: ${currentTemplate.name}`;
 
                 // Generate form fields
-                generateForm(currentTemplate.placeholders);
+                generateForm(currentTemplate);
                 
                 // Hide loading and show form
                 document.getElementById('loadingForm').classList.add('hidden');
@@ -199,28 +199,119 @@
             }
         }
 
-        function generateForm(placeholders) {
+        function generateForm(template) {
             const form = document.getElementById('customForm');
             form.innerHTML = '';
 
-            placeholders.forEach(placeholder => {
-                const fieldName = placeholder.replace(/[\[\]]/g, '').toLowerCase();
-                const fieldLabel = formatFieldLabel(fieldName);
-                
+            let fieldsToProcess = [];
+            
+            // Use fieldConfigs if available, otherwise fallback to placeholders
+            if (template.fieldConfigs && template.fieldConfigs.length > 0) {
+                fieldsToProcess = template.fieldConfigs.sort((a, b) => a.order - b.order);
+            } else {
+                // Backward compatibility
+                fieldsToProcess = template.placeholders.map(placeholder => ({
+                    placeholder: placeholder,
+                    fieldId: placeholder.replace(/[\[\]]/g, ''),
+                    type: 'text',
+                    label: formatFieldLabel(placeholder.replace(/[\[\]]/g, '').toLowerCase()),
+                    order: template.placeholders.indexOf(placeholder)
+                }));
+            }
+
+            fieldsToProcess.forEach(config => {
                 const fieldDiv = document.createElement('div');
-                fieldDiv.innerHTML = `
-                    <label for="${fieldName}" class="field-label">${fieldLabel}</label>
-                    <input 
-                        type="text" 
-                        id="${fieldName}" 
-                        name="${fieldName}" 
-                        class="field-input"
-                        placeholder="Introdu ${fieldLabel.toLowerCase()}"
-                        onchange="handleFieldChange()"
-                    />
-                    <p class="text-xs text-gray-500 mt-1">Placeholder: ${placeholder}</p>
-                `;
+                const fieldId = config.fieldId.toLowerCase();
+                let fieldHTML = '';
                 
+                switch(config.type) {
+                    case 'textarea':
+                        const rows = config.rows || 4;
+                        fieldHTML = `
+                            <label for="${fieldId}" class="field-label">${config.label}</label>
+                            <textarea 
+                                id="${fieldId}" 
+                                name="${fieldId}" 
+                                rows="${rows}"
+                                class="field-input"
+                                placeholder="Introdu ${config.label.toLowerCase()}"
+                                onchange="handleFieldChange()"
+                            ></textarea>
+                        `;
+                        break;
+                        
+                    case 'dropdown':
+                        const options = config.options || [];
+                        const optionsHTML = options.map(option => 
+                            `<option value="${option}">${option}</option>`
+                        ).join('');
+                        
+                        fieldHTML = `
+                            <label for="${fieldId}" class="field-label">${config.label}</label>
+                            <select 
+                                id="${fieldId}" 
+                                name="${fieldId}" 
+                                class="field-input"
+                                onchange="handleFieldChange()"
+                            >
+                                <option value="">Selectează ${config.label.toLowerCase()}</option>
+                                ${optionsHTML}
+                            </select>
+                        `;
+                        break;
+                        
+                    case 'checkbox':
+                        fieldHTML = `
+                            <div class="flex items-center space-x-3">
+                                <input 
+                                    type="checkbox" 
+                                    id="${fieldId}" 
+                                    name="${fieldId}" 
+                                    class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                    onchange="handleFieldChange()"
+                                />
+                                <label for="${fieldId}" class="field-label mb-0">${config.label}</label>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">
+                                ${config.checkedText ? `Bifat: "${config.checkedText}" | Nebifat: "${config.uncheckedText}"` : ''}
+                            </p>
+                        `;
+                        break;
+                        
+                    case 'gender':
+                        fieldHTML = `
+                            <label for="${fieldId}" class="field-label">${config.label}</label>
+                            <select 
+                                id="${fieldId}" 
+                                name="${fieldId}" 
+                                class="field-input"
+                                onchange="handleFieldChange()"
+                            >
+                                <option value="">Selectează genul</option>
+                                <option value="male">Masculin${config.maleText ? ` - "${config.maleText}"` : ''}</option>
+                                <option value="female">Feminin${config.femaleText ? ` - "${config.femaleText}"` : ''}</option>
+                            </select>
+                        `;
+                        break;
+                        
+                    case 'text':
+                    default:
+                        fieldHTML = `
+                            <label for="${fieldId}" class="field-label">${config.label}</label>
+                            <input 
+                                type="text" 
+                                id="${fieldId}" 
+                                name="${fieldId}" 
+                                class="field-input"
+                                placeholder="Introdu ${config.label.toLowerCase()}"
+                                onchange="handleFieldChange()"
+                            />
+                        `;
+                        break;
+                }
+                
+                fieldHTML += `<p class="text-xs text-gray-500 mt-1">Placeholder: ${config.placeholder}</p>`;
+                fieldDiv.innerHTML = fieldHTML;
                 form.appendChild(fieldDiv);
             });
         }
@@ -336,10 +427,27 @@
         function getFormData() {
             const formData = {};
             const form = document.getElementById('customForm');
-            const inputs = form.querySelectorAll('input');
             
+            // Get all input elements (text, checkbox)
+            const inputs = form.querySelectorAll('input');
             inputs.forEach(input => {
-                formData[input.name] = input.value;
+                if (input.type === 'checkbox') {
+                    formData[input.name] = input.checked.toString();
+                } else {
+                    formData[input.name] = input.value;
+                }
+            });
+            
+            // Get all select elements (dropdown, gender)
+            const selects = form.querySelectorAll('select');
+            selects.forEach(select => {
+                formData[select.name] = select.value;
+            });
+            
+            // Get all textarea elements
+            const textareas = form.querySelectorAll('textarea');
+            textareas.forEach(textarea => {
+                formData[textarea.name] = textarea.value;
             });
             
             return formData;

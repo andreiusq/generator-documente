@@ -57,19 +57,24 @@
 
     <!-- Template Upload Modal -->
     <div id="uploadModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Configurează Template-ul</h3>
+        <div class="relative top-10 mx-auto p-5 border max-w-4xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium text-gray-900 mb-4 text-center">Configurează Template-ul</h3>
+                
+                <!-- Template Name -->
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Nume Template</label>
                     <input type="text" id="templateName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="ex: Cerere concediu">
                 </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Placeholder-uri detectate:</label>
-                    <div id="detectedPlaceholders" class="max-h-40 overflow-y-auto bg-gray-50 p-3 rounded border text-left">
-                        <!-- Placeholders will be listed here -->
+                
+                <!-- Placeholder Configuration -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Configurează Placeholder-urile:</label>
+                    <div id="detectedPlaceholders" class="max-h-96 overflow-y-auto bg-gray-50 p-4 rounded border">
+                        <!-- Placeholders configuration will be listed here -->
                     </div>
                 </div>
+                
                 <div class="flex justify-center space-x-3">
                     <button onclick="cancelUpload()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors">
                         Anulează
@@ -134,14 +139,182 @@
                 return;
             }
 
-            const placeholderList = placeholders.map(p => 
-                `<div class="flex justify-between items-center py-1">
-                    <span class="font-mono text-sm bg-gray-200 px-2 py-1 rounded">${p}</span>
-                    <span class="text-xs text-gray-500">câmp obligatoriu</span>
-                </div>`
-            ).join('');
+            const placeholderConfigs = placeholders.map((placeholder, index) => {
+                const fieldId = placeholder.replace(/[\[\]]/g, '');
+                const defaultLabel = formatFieldLabel(fieldId.toLowerCase());
+                
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4 mb-4 bg-white">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <!-- Placeholder Name -->
+                            <div class="col-span-1 md:col-span-2 lg:col-span-1">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Placeholder</label>
+                                <div class="font-mono text-sm bg-gray-100 px-3 py-2 rounded border">${placeholder}</div>
+                            </div>
+                            
+                            <!-- Order -->
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Ordine</label>
+                                <input type="number" 
+                                       id="order_${fieldId}" 
+                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500" 
+                                       value="${index + 1}" 
+                                       min="1" 
+                                       max="${placeholders.length}">
+                            </div>
+                            
+                            <!-- Field Type -->
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Tip Câmp</label>
+                                <select id="type_${fieldId}" 
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        onchange="handleTypeChange('${fieldId}')">
+                                    <option value="text">Text scurt</option>
+                                    <option value="textarea">Text lung (mai multe linii)</option>
+                                    <option value="dropdown">Dropdown (listă opțiuni)</option>
+                                    <option value="checkbox">Checkbox (da/nu)</option>
+                                    <option value="gender">Gen (masculin/feminin)</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Custom Label -->
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Etichetă Personalizată</label>
+                                <input type="text" 
+                                       id="label_${fieldId}" 
+                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500" 
+                                       value="${defaultLabel}"
+                                       placeholder="ex: Numele complet">
+                            </div>
+                        </div>
+                        
+                        <!-- Additional Configuration Area -->
+                        <div id="extraConfig_${fieldId}" class="mt-4 hidden">
+                            <!-- Dynamic configuration based on field type will appear here -->
+                        </div>
+                    </div>
+                `;
+            }).join('');
             
-            placeholdersDiv.innerHTML = `<div class="space-y-1">${placeholderList}</div>`;
+            placeholdersDiv.innerHTML = `
+                <div class="space-y-2">
+                    <div class="text-sm text-gray-600 mb-4">
+                        Configurează fiecare placeholder pentru a controla cum va apărea în formularul generat:
+                    </div>
+                    ${placeholderConfigs}
+                    <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="text-sm text-blue-800">
+                                <strong>Tip:</strong> Ordinea determină cum vor apărea câmpurile în formular. Poți folosi tipul "Gen" pentru placeholder-uri care trebuie să se adapteze masculin/feminin (ex: "Subsemnatul/Subsemnata").
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleTypeChange(fieldId) {
+            const typeSelect = document.getElementById(`type_${fieldId}`);
+            const extraConfigDiv = document.getElementById(`extraConfig_${fieldId}`);
+            const selectedType = typeSelect.value;
+            
+            extraConfigDiv.classList.remove('hidden');
+            
+            switch(selectedType) {
+                case 'dropdown':
+                    extraConfigDiv.innerHTML = `
+                        <label class="block text-xs font-medium text-gray-700 mb-2">Opțiuni Dropdown (o opțiune pe linie)</label>
+                        <textarea id="options_${fieldId}" 
+                                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                  rows="4"
+                                  placeholder="Opțiunea 1&#10;Opțiunea 2&#10;Opțiunea 3"></textarea>
+                    `;
+                    break;
+                    
+                case 'checkbox':
+                    extraConfigDiv.innerHTML = `
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-2">Text când e bifat</label>
+                                <input type="text" 
+                                       id="checkedText_${fieldId}" 
+                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                       value="Da"
+                                       placeholder="ex: Da, Acceptă">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-2">Text când nu e bifat</label>
+                                <input type="text" 
+                                       id="uncheckedText_${fieldId}" 
+                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                       value="Nu"
+                                       placeholder="ex: Nu, Refuză">
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'gender':
+                    extraConfigDiv.innerHTML = `
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-2">Text pentru masculin</label>
+                                <input type="text" 
+                                       id="maleText_${fieldId}" 
+                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                       placeholder="ex: Subsemnatul"
+                                       value="${inferMaleText(fieldId)}">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-2">Text pentru feminin</label>
+                                <input type="text" 
+                                       id="femaleText_${fieldId}" 
+                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                       placeholder="ex: Subsemnata"
+                                       value="${inferFemaleText(fieldId)}">
+                            </div>
+                        </div>
+                        <div class="mt-2 text-xs text-gray-600">
+                            Utilizatorul va putea alege între masculin și feminin într-un dropdown.
+                        </div>
+                    `;
+                    break;
+                    
+                case 'textarea':
+                    extraConfigDiv.innerHTML = `
+                        <label class="block text-xs font-medium text-gray-700 mb-2">Numărul de rânduri pentru textarea</label>
+                        <input type="number" 
+                               id="rows_${fieldId}" 
+                               class="w-32 px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                               value="4"
+                               min="2" 
+                               max="10">
+                    `;
+                    break;
+                    
+                default:
+                    extraConfigDiv.classList.add('hidden');
+                    break;
+            }
+        }
+
+        function inferMaleText(fieldId) {
+            const placeholder = fieldId.toLowerCase();
+            if (placeholder.includes('subsemnat')) return 'Subsemnatul';
+            if (placeholder.includes('solicit')) return 'Solicitantul';
+            if (placeholder.includes('nume')) return 'Domnul';
+            return '';
+        }
+
+        function inferFemaleText(fieldId) {
+            const placeholder = fieldId.toLowerCase();
+            if (placeholder.includes('subsemnat')) return 'Subsemnata';
+            if (placeholder.includes('solicit')) return 'Solicitanta'; 
+            if (placeholder.includes('nume')) return 'Doamna';
+            return '';
         }
 
         async function confirmUpload() {
@@ -158,12 +331,58 @@
             }
 
             try {
+                // Collect field configurations
+                const fieldConfigs = [];
+                
+                currentPlaceholders.forEach(placeholder => {
+                    const fieldId = placeholder.replace(/[\[\]]/g, '');
+                    const order = parseInt(document.getElementById(`order_${fieldId}`)?.value || 1);
+                    const type = document.getElementById(`type_${fieldId}`)?.value || 'text';
+                    const label = document.getElementById(`label_${fieldId}`)?.value || placeholder;
+                    
+                    const config = {
+                        placeholder,
+                        fieldId,
+                        order,
+                        type,
+                        label
+                    };
+                    
+                    // Add type-specific configurations
+                    switch(type) {
+                        case 'dropdown':
+                            const optionsText = document.getElementById(`options_${fieldId}`)?.value || '';
+                            config.options = optionsText.split('\n').filter(opt => opt.trim()).map(opt => opt.trim());
+                            break;
+                            
+                        case 'checkbox':
+                            config.checkedText = document.getElementById(`checkedText_${fieldId}`)?.value || 'Da';
+                            config.uncheckedText = document.getElementById(`uncheckedText_${fieldId}`)?.value || 'Nu';
+                            break;
+                            
+                        case 'gender':
+                            config.maleText = document.getElementById(`maleText_${fieldId}`)?.value || '';
+                            config.femaleText = document.getElementById(`femaleText_${fieldId}`)?.value || '';
+                            break;
+                            
+                        case 'textarea':
+                            config.rows = parseInt(document.getElementById(`rows_${fieldId}`)?.value || 4);
+                            break;
+                    }
+                    
+                    fieldConfigs.push(config);
+                });
+                
+                // Sort by order
+                fieldConfigs.sort((a, b) => a.order - b.order);
+
                 const arrayBuffer = await currentFile.arrayBuffer();
                 const result = await ipcRenderer.invoke('save-custom-template', {
                     name: templateName,
                     file: arrayBuffer,
                     originalName: currentFile.name,
-                    placeholders: currentPlaceholders
+                    placeholders: currentPlaceholders,
+                    fieldConfigs: fieldConfigs
                 });
 
                 if (result.success) {
@@ -177,6 +396,12 @@
                 console.error('Error saving template:', error);
                 alert('Eroare la salvarea template-ului');
             }
+        }
+
+        function formatFieldLabel(fieldName) {
+            return fieldName
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, l => l.toUpperCase());
         }
 
         function cancelUpload() {
@@ -222,11 +447,20 @@
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                                     </svg>
-                                    ${template.placeholders.length} placeholder-uri
+                                    ${template.placeholders.length} câmp${template.placeholders.length !== 1 ? 'uri' : ''}
                                 </span>
+                                ${template.fieldConfigs && template.fieldConfigs.length > 0 ? 
+                                    '<span class="ml-2 text-green-600 text-xs">✓ Configurat</span>' : 
+                                    '<span class="ml-2 text-yellow-600 text-xs">Basic</span>'
+                                }
                             </p>
                             <div class="text-xs text-gray-500">
-                                ${template.placeholders.slice(0, 3).map(p => `<span class="bg-gray-100 px-2 py-1 rounded mr-1">${p}</span>`).join('')}
+                                ${template.fieldConfigs && template.fieldConfigs.length > 0 ? 
+                                    template.fieldConfigs.slice(0, 3).map(config => 
+                                        `<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-1" title="${config.placeholder}">${config.label || config.fieldId}</span>`
+                                    ).join('') :
+                                    template.placeholders.slice(0, 3).map(p => `<span class="bg-gray-100 px-2 py-1 rounded mr-1">${p}</span>`).join('')
+                                }
                                 ${template.placeholders.length > 3 ? '<span>...</span>' : ''}
                             </div>
                         </div>

@@ -654,6 +654,7 @@ class DocumentGenerator {
                 fileName: fileName,
                 originalName: templateData.originalName,
                 placeholders: templateData.placeholders,
+                fieldConfigs: templateData.fieldConfigs || [],
                 createdAt: new Date().toISOString()
             };
 
@@ -737,12 +738,40 @@ class DocumentGenerator {
             const safeName = template.name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_');
             const outputName = `${safeName}_${new Date().toISOString().split('T')[0]}.docx`;
 
-            // Create replacements object from form data
+            // Create replacements object from form data using field configs
             const replacements = {};
-            template.placeholders.forEach(placeholder => {
-                const fieldName = placeholder.replace(/[\[\]]/g, '').toLowerCase();
-                replacements[placeholder] = formData[fieldName] || '';
-            });
+            
+            if (template.fieldConfigs && template.fieldConfigs.length > 0) {
+                // Use field configs for replacement logic
+                template.fieldConfigs.forEach(config => {
+                    const fieldValue = formData[config.fieldId.toLowerCase()];
+                    
+                    switch(config.type) {
+                        case 'checkbox':
+                            replacements[config.placeholder] = fieldValue === 'true' ? 
+                                config.checkedText : config.uncheckedText;
+                            break;
+                            
+                        case 'gender':
+                            replacements[config.placeholder] = fieldValue === 'male' ? 
+                                config.maleText : config.femaleText;
+                            break;
+                            
+                        case 'dropdown':
+                        case 'textarea':
+                        case 'text':
+                        default:
+                            replacements[config.placeholder] = fieldValue || '';
+                            break;
+                    }
+                });
+            } else {
+                // Fallback to old method for backward compatibility
+                template.placeholders.forEach(placeholder => {
+                    const fieldName = placeholder.replace(/[\[\]]/g, '').toLowerCase();
+                    replacements[placeholder] = formData[fieldName] || '';
+                });
+            }
 
             const outputPath = await this.processTemplate(templatePath, outputName, replacements);
             return { 
@@ -772,12 +801,40 @@ class DocumentGenerator {
                 return { success: false, error: 'Template file not found' };
             }
 
-            // Create replacements object from form data
+            // Create replacements object from form data using field configs
             const replacements = {};
-            template.placeholders.forEach(placeholder => {
-                const fieldName = placeholder.replace(/[\[\]]/g, '').toLowerCase();
-                replacements[placeholder] = formData[fieldName] || '';
-            });
+            
+            if (template.fieldConfigs && template.fieldConfigs.length > 0) {
+                // Use field configs for replacement logic
+                template.fieldConfigs.forEach(config => {
+                    const fieldValue = formData[config.fieldId.toLowerCase()];
+                    
+                    switch(config.type) {
+                        case 'checkbox':
+                            replacements[config.placeholder] = fieldValue === 'true' ? 
+                                config.checkedText : config.uncheckedText;
+                            break;
+                            
+                        case 'gender':
+                            replacements[config.placeholder] = fieldValue === 'male' ? 
+                                config.maleText : config.femaleText;
+                            break;
+                            
+                        case 'dropdown':
+                        case 'textarea':
+                        case 'text':
+                        default:
+                            replacements[config.placeholder] = fieldValue || '';
+                            break;
+                    }
+                });
+            } else {
+                // Fallback to old method for backward compatibility
+                template.placeholders.forEach(placeholder => {
+                    const fieldName = placeholder.replace(/[\[\]]/g, '').toLowerCase();
+                    replacements[placeholder] = formData[fieldName] || '';
+                });
+            }
 
             const html = await this.convertToPreviewHTML(templatePath, replacements);
             return { success: true, html: html };
